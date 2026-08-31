@@ -14,20 +14,43 @@ struct GoalsListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                DynamicGradientBackground()
+                Color.appBackground.ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color.heroPurple.opacity(0.22), Color.clear],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: 340
+                )
+                .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 14) {
+                        // Header
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("GOALS")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .kerning(1.5)
+                                    .foregroundStyle(Color.textTertiary)
+                                Text("Savings")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundStyle(Color.textPrimary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+
                         if goals.isEmpty {
-                            VStack(spacing: 12) {
+                            VStack(spacing: 14) {
                                 Image(systemName: "target")
-                                    .font(.system(size: 48, weight: .ultraLight))
-                                    .foregroundStyle(.secondary)
+                                    .font(.system(size: 52, weight: .ultraLight))
+                                    .foregroundStyle(Color.textTertiary)
                                 Text("No goals yet")
                                     .font(.headline)
-                                Text("Set a savings goal to see your daily target.")
+                                    .foregroundStyle(Color.textPrimary)
+                                Text("Set a savings goal to track your progress.")
                                     .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.textSecondary)
                                     .multilineTextAlignment(.center)
                             }
                             .padding(.top, 60)
@@ -38,23 +61,23 @@ struct GoalsListView: View {
                         }
                     }
                     .padding(16)
-                    .padding(.bottom, 90)
+                    .padding(.bottom, 100)
                 }
             }
-            .navigationTitle("Goals")
+            .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
             .overlay(alignment: .bottomTrailing) {
                 Button {
                     showingAddGoal = true
                 } label: {
                     Image(systemName: "plus")
-                        .font(.title2.weight(.bold))
+                        .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(.white)
-                        .frame(width: 58, height: 58)
+                        .frame(width: 56, height: 56)
                         .background(
                             Circle()
-                                .fill(Color.accentColor.gradient)
-                                .shadow(color: Color.accentColor.opacity(0.4), radius: 12, x: 0, y: 6)
+                                .fill(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .shadow(color: Color.heroPink.opacity(0.45), radius: 14, x: 0, y: 6)
                         )
                 }
                 .padding(.trailing, 20)
@@ -65,6 +88,7 @@ struct GoalsListView: View {
                 AddGoalView()
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     private func loadGoals() {
@@ -77,32 +101,38 @@ struct GoalRowView: View {
     let goal: FinancialGoal
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             ZStack {
-                ProgressRing(progress: goal.progress, lineWidth: 9, tint: .purple)
-                    .frame(width: 56, height: 56)
+                ProgressRing(progress: goal.progress, lineWidth: 7, tint: Color.heroPink)
+                    .frame(width: 54, height: 54)
                 Image(systemName: goal.category.symbolName)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.purple)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.heroPink)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(goal.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.textPrimary)
                 Text("\(CurrencyFormatter.format(goal.savedAmount)) of \(CurrencyFormatter.format(goal.targetAmount))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Save \(CurrencyFormatter.format(goal.suggestedDailySaving))/day to hit it")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textSecondary)
+                Text("Save \(CurrencyFormatter.format(goal.suggestedDailySaving))/day")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.textTertiary)
             }
 
             Spacer()
 
-            Text("\(Int(goal.progress * 100))%")
-                .font(.system(.callout, design: .rounded).weight(.bold))
-                .monospacedDigit()
-                .foregroundStyle(.purple)
+            VStack(alignment: .trailing, spacing: 3) {
+                Text("\(Int(goal.progress * 100))%")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.heroPink)
+                Text("done")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.textTertiary)
+            }
         }
         .glassCard()
     }

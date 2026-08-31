@@ -2,9 +2,9 @@
 //  MapExpensesView.swift
 //  ExpenseCompanion
 //
-//  Shows every geotagged expense on a map. Nearby expenses are grouped into
-//  clusters (via LocationInsightsEngine) so a frequently-visited cafe shows
-//  one pin with a count badge instead of a dozen overlapping pins.
+//  Dark fintech map tab. Full-screen map with GTA-V style dark vignette,
+//  auto-zoom to current location, a safe-area-aware custom locate button,
+//  and category filter chips with glow.
 //
 
 import SwiftUI
@@ -15,7 +15,7 @@ struct MapExpensesView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var allExpenses: [Expense] = []
-    @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var cameraPosition: MapCameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
     @State private var selectedCluster: LocationCluster?
     @State private var activeCategoryFilter: ExpenseCategory?
 
@@ -31,7 +31,10 @@ struct MapExpensesView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
+
+                // ── Full-screen map ────────────────────────────────────────
                 Map(position: $cameraPosition, selection: .constant(nil)) {
+                    UserAnnotation()
                     ForEach(clusters) { cluster in
                         Annotation(cluster.displayName, coordinate: cluster.coordinate) {
                             ClusterPinView(cluster: cluster)
@@ -42,38 +45,114 @@ struct MapExpensesView: View {
                         }
                     }
                 }
-                .mapControls {
-                    MapUserLocationButton()
-                    MapCompass()
-                }
-                .ignoresSafeArea(edges: .bottom)
+                .mapStyle(.standard(elevation: .realistic, pointsOfInterest: .including([.restaurant, .cafe, .store])))
+                .mapControls { MapCompass(); MapScaleView() }
+                .ignoresSafeArea()
 
-                categoryFilterBar
-                    .padding(.top, 8)
+                // ── GTA V dark vignette ────────────────────────────────────
+                // Dark radial gradient — heavy at edges, clear at center
+                RadialGradient(
+                    colors: [Color.clear, Color.black.opacity(0.68)],
+                    center: .center,
+                    startRadius: 100,
+                    endRadius: 480
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+                // Top fade (protects header readability)
+                VStack {
+                    LinearGradient(
+                        colors: [Color.black.opacity(0.72), Color.clear],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                    .frame(height: 160)
+                    .ignoresSafeArea(edges: .top)
+                    Spacer()
+                    // Bottom fade (protects tab bar area)
+                    LinearGradient(
+                        colors: [Color.clear, Color.black.opacity(0.55)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                    .frame(height: 130)
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+                // ── Floating top bar ───────────────────────────────────────
+                VStack(spacing: 0) {
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("MAP")
+                                .font(.system(size: 10, weight: .semibold))
+                                .kerning(1.5)
+                                .foregroundStyle(Color.textTertiary)
+                            Text("\(clusters.count) spot\(clusters.count == 1 ? "" : "s")")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(Color.textPrimary)
+                        }
+                        Spacer()
+
+                        // Custom locate-me button — safe area aware
+                        Button {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+                                cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
+                            }
+                            Haptics.light()
+                        } label: {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color.heroPink)
+                                .frame(width: 42, height: 42)
+                                .background(
+                                    Circle()
+                                        .fill(Color(red: 0.10, green: 0.10, blue: 0.13))
+                                        .overlay(Circle().strokeBorder(Color.heroPink.opacity(0.3), lineWidth: 1))
+                                )
+                                .shadow(color: Color.heroPink.opacity(0.3), radius: 8, x: 0, y: 3)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 56)   // below Dynamic Island / status bar
+                    .padding(.bottom, 10)
+
+                    // Category filter chips
+                    categoryFilterBar
+                        .padding(.bottom, 10)
+                }
+
             }
-            .navigationTitle("Map")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                loadExpenses()
-                fitCameraToClusters()
-            }
+            .navigationTitle("")
+            .toolbar(.hidden, for: .navigationBar)
+            .onAppear(perform: loadExpenses)
             .sheet(item: $selectedCluster) { cluster in
                 LocationClusterDetailView(cluster: cluster)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
         }
+        .preferredColorScheme(.dark)
     }
+
+    // MARK: - Filter Bar
 
     private var categoryFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                filterChip(label: "All", color: .primary, isSelected: activeCategoryFilter == nil) {
-                    activeCategoryFilter = nil
-                }
+                filterChip(
+                    symbol: "square.grid.2x2", label: "All",
+                    color: .white,
+                    isSelected: activeCategoryFilter == nil
+                ) { activeCategoryFilter = nil }
+
                 ForEach(ExpenseCategory.allCases) { category in
-                    filterChip(label: "\(category.emoji) \(category.rawValue)", color: category.color, isSelected: activeCategoryFilter == category) {
-                        activeCategoryFilter = activeCategoryFilter == category ? nil : category
+                    filterChip(
+                        symbol: category.symbolName,
+                        label: category.rawValue,
+                        color: category.color,
+                        isSelected: activeCategoryFilter == category
+                    ) {
+                        activeCategoryFilter = (activeCategoryFilter == category) ? nil : category
                     }
                 }
             }
@@ -81,45 +160,38 @@ struct MapExpensesView: View {
         }
     }
 
-    private func filterChip(label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .font(.caption.weight(.medium))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background {
-                    Capsule().fill(isSelected ? color.opacity(0.3) : Color.white.opacity(0.15))
-                }
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(isSelected ? color : .clear, lineWidth: 1.5))
+    private func filterChip(symbol: String, label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        let selected = isSelected
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { action() }
+            Haptics.light()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: symbol)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(selected ? (color == .white ? Color.black : Color.white) : color)
+                Text(label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(selected ? (color == .white ? Color.black : Color.white) : Color.textSecondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(selected ? color : Color.white.opacity(0.08))
+                    .shadow(color: selected ? color.opacity(0.4) : .clear, radius: 8, x: 0, y: 2)
+            )
         }
         .buttonStyle(.plain)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selected)
     }
+
+    // MARK: - Data
 
     private func loadExpenses() {
         let repo = ExpenseRepository(context: modelContext)
         allExpenses = (try? repo.allExpenses())?.filter { $0.hasLocation } ?? []
-    }
-
-    private func fitCameraToClusters() {
-        let coordinates = clusters.map(\.coordinate)
-        guard !coordinates.isEmpty else { return }
-
-        if coordinates.count == 1, let only = coordinates.first {
-            cameraPosition = .region(MKCoordinateRegion(center: only, span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
-            return
-        }
-
-        let lats = coordinates.map(\.latitude)
-        let lons = coordinates.map(\.longitude)
-        guard let minLat = lats.min(), let maxLat = lats.max(), let minLon = lons.min(), let maxLon = lons.max() else { return }
-
-        let center = CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2, longitude: (minLon + maxLon) / 2)
-        let span = MKCoordinateSpan(
-            latitudeDelta: max((maxLat - minLat) * 1.4, 0.02),
-            longitudeDelta: max((maxLon - minLon) * 1.4, 0.02)
-        )
-        cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
     }
 }
 
@@ -131,27 +203,34 @@ private struct ClusterPinView: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(cluster.dominantCategory.color)
+                .fill(cluster.dominantCategory.color.opacity(0.25))
+                .frame(width: pinSize + 12, height: pinSize + 12)
+                .blur(radius: 7)
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [cluster.dominantCategory.color, cluster.dominantCategory.color.opacity(0.65)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
                 .frame(width: pinSize, height: pinSize)
-                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-                .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.28), lineWidth: 1.5))
+                .shadow(color: cluster.dominantCategory.color.opacity(0.55), radius: 9, x: 0, y: 3)
 
             if cluster.visitCount > 1 {
                 Text("\(cluster.visitCount)")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: pinSize * 0.38, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             } else {
                 Image(systemName: cluster.dominantCategory.symbolName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: pinSize * 0.42, weight: .semibold))
                     .foregroundStyle(.white)
             }
         }
-        .transition(.scale.combined(with: .opacity))
+        .transition(.scale(scale: 0.5).combined(with: .opacity))
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: cluster.visitCount)
     }
 
-    /// Pins scale slightly with visit count so heavily-visited spots stand out at a glance.
-    private var pinSize: CGFloat {
-        min(28 + CGFloat(cluster.visitCount) * 2, 48)
-    }
+    private var pinSize: CGFloat { min(30 + CGFloat(cluster.visitCount) * 2, 52) }
 }

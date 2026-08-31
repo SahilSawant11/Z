@@ -19,6 +19,7 @@ final class DashboardViewModel {
 
     // Published-equivalent state (via @Observable)
     var todayExpenses: [Expense] = []
+    var recentExpenses: [Expense] = []   // 28-day window for heatmap
     var todayTotal: Double = 0
     var weekTotal: Double = 0
     var monthTotal: Double = 0
@@ -42,6 +43,9 @@ final class DashboardViewModel {
         do {
             todayExpenses = try expenseRepository.expenses(on: now)
             todayTotal = todayExpenses.reduce(0) { $0 + $1.amount }
+
+            let heatmapStart = calendar.date(byAdding: .day, value: -27, to: calendar.startOfDay(for: now)) ?? now
+            recentExpenses = try expenseRepository.expenses(from: heatmapStart, to: now)
 
             let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
             weekTotal = try expenseRepository.expenses(from: weekStart, to: now).reduce(0) { $0 + $1.amount }

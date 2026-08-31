@@ -49,7 +49,7 @@ struct ExpenseCompanionApp: App {
             RootTabView()
                 .environmentObject(locationManager)
                 .environmentObject(appearanceTimeProvider)
-                .preferredColorScheme(nil) // respect system dark mode setting
+                .preferredColorScheme(.dark) // Dark fintech aesthetic
         }
         .modelContainer(modelContainer)
     }

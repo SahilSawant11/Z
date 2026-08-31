@@ -23,28 +23,35 @@ struct AddGoalView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                DynamicGradientBackground()
+                Color.appBackground.ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color.heroPurple.opacity(0.22), Color.clear],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: 320
+                )
+                .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Goal Title")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .textCase(.uppercase)
-                                .kerning(0.5)
+                    VStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("GOAL TITLE")
+                                .font(.system(size: 10, weight: .semibold))
+                                .kerning(1.2)
+                                .foregroundStyle(Color.textTertiary)
                             TextField("e.g. Vacation to Goa", text: $title)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(Color.textPrimary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .glassCard()
 
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Category")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .textCase(.uppercase)
-                                .kerning(0.5)
-                            LazyVGrid(columns: goalCategoryColumns, spacing: 10) {
+                            Text("CATEGORY")
+                                .font(.system(size: 10, weight: .semibold))
+                                .kerning(1.2)
+                                .foregroundStyle(Color.textTertiary)
+                            LazyVGrid(columns: goalCategoryColumns, spacing: 12) {
                                 ForEach(GoalCategory.allCases) { cat in
                                     goalCategoryCell(cat: cat)
                                 }
@@ -52,46 +59,51 @@ struct AddGoalView: View {
                         }
                         .glassCard()
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Target Amount")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .textCase(.uppercase)
-                                .kerning(0.5)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("TARGET AMOUNT")
+                                .font(.system(size: 10, weight: .semibold))
+                                .kerning(1.2)
+                                .foregroundStyle(Color.textTertiary)
                             TextField("50000", text: $targetAmountText)
                                 .keyboardType(.decimalPad)
+                                .font(.system(size: 30, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                                .foregroundStyle(Color.textPrimary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .glassCard()
 
                         HStack {
-                            Text("Deadline")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .textCase(.uppercase)
-                                .kerning(0.5)
+                            Text("DEADLINE")
+                                .font(.system(size: 10, weight: .semibold))
+                                .kerning(1.2)
+                                .foregroundStyle(Color.textTertiary)
                             Spacer()
                             DatePicker("", selection: $deadline, displayedComponents: .date)
                                 .labelsHidden()
+                                .colorScheme(.dark)
                         }
                         .glassCard()
 
                         if let errorMessage {
-                            Text(errorMessage).font(.caption).foregroundStyle(.red)
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundStyle(.red)
                         }
 
                         Button {
                             save()
                         } label: {
                             Text("Create Goal")
-                                .font(.headline)
+                                .font(.system(size: 16, weight: .bold))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
+                                .padding(.vertical, 17)
                                 .background(
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                                         .fill(isValid
-                                              ? AnyShapeStyle(Color.accentColor.gradient)
-                                              : AnyShapeStyle(Color.gray.opacity(0.3)))
+                                              ? AnyShapeStyle(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
+                                              : AnyShapeStyle(Color.white.opacity(0.08)))
+                                        .shadow(color: isValid ? Color.heroPink.opacity(0.4) : .clear, radius: 12, x: 0, y: 4)
                                 )
                                 .foregroundStyle(.white)
                         }
@@ -99,17 +111,22 @@ struct AddGoalView: View {
                         .animation(.easeInOut(duration: 0.2), value: isValid)
                     }
                     .padding(16)
+                    .padding(.bottom, 20)
                 }
             }
             .navigationTitle("New Goal")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.appBackground, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.textSecondary)
                 }
             }
         }
         .presentationDetents([.large])
+        .presentationBackground(Color.appBackground)
+        .preferredColorScheme(.dark)
     }
 
     private var goalCategoryColumns: [GridItem] {
@@ -123,18 +140,18 @@ struct AddGoalView: View {
             Haptics.light()
         } label: {
             VStack(spacing: 6) {
-                Image(systemName: cat.symbolName)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(selected ? .white : Color.purple)
-                    .frame(width: 48, height: 48)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(selected ? AnyShapeStyle(Color.purple.gradient) : AnyShapeStyle(Color.purple.opacity(0.12)))
-                    )
-                    .shadow(color: selected ? Color.purple.opacity(0.35) : .clear, radius: 6, x: 0, y: 3)
+                ZStack {
+                    Circle()
+                        .fill(selected ? Color.heroPink.opacity(0.2) : Color.white.opacity(0.06))
+                        .frame(width: 50, height: 50)
+                        .shadow(color: selected ? Color.heroPink.opacity(0.4) : .clear, radius: 8, x: 0, y: 4)
+                    Image(systemName: cat.symbolName)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(selected ? Color.heroPink : Color.textTertiary)
+                }
                 Text(cat.rawValue)
-                    .font(.system(size: 10, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(selected ? Color.primary : Color.secondary)
+                    .font(.system(size: 9, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(selected ? Color.heroPink : Color.textTertiary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)

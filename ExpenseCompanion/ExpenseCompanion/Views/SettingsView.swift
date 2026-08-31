@@ -13,48 +13,130 @@ struct SettingsView: View {
 
     @State private var budgetSettings: DailyBudgetSettings?
     @State private var dailyLimitText: String = ""
+    @State private var selectedCurrency: String = "INR"
     @State private var placesWithLimits: [FrequentPlace] = []
+    @State private var showingExportAlert = false
+    @FocusState private var budgetFieldFocused: Bool
+
+    private let currencies = ["INR", "USD", "EUR", "GBP", "JPY", "AED", "SGD", "CAD", "AUD"]
 
     var body: some View {
         NavigationStack {
             ZStack {
-                DynamicGradientBackground()
+                Color.appBackground.ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color.accentBlue.opacity(0.18), Color.clear],
+                    center: .top, startRadius: 0, endRadius: 340
+                )
+                .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 10) {
+                    VStack(spacing: 14) {
+                        // Header
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("SETTINGS")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .kerning(1.5)
+                                    .foregroundStyle(Color.textTertiary)
+                                Text("Preferences")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundStyle(Color.textPrimary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 4)
+
+                        // ── BUDGET ─────────────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
                             GlassSectionHeader(title: "Daily Budget", systemImage: "dial.medium")
-                            HStack {
-                                Text(CurrencyFormatter.symbol(for: budgetSettings?.currencyCode ?? "INR"))
+
+                            HStack(alignment: .center, spacing: 8) {
+                                Text(CurrencyFormatter.symbol(for: selectedCurrency))
+                                    .font(.system(size: 26, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Color.textTertiary)
                                 TextField("500", text: $dailyLimitText)
                                     .keyboardType(.decimalPad)
-                                    .onSubmit(saveBudget)
+                                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                                    .monospacedDigit()
+                                    .foregroundStyle(Color.textPrimary)
+                                    .focused($budgetFieldFocused)
+                                    .toolbar {
+                                        ToolbarItemGroup(placement: .keyboard) {
+                                            Spacer()
+                                            Button("Done") {
+                                                budgetFieldFocused = false
+                                            }
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundStyle(Color.heroPink)
+                                        }
+                                    }
+                                Spacer()
+                                // Visible Save button
+                                Button {
+                                    saveBudget()
+                                    budgetFieldFocused = false
+                                    Haptics.success()
+                                } label: {
+                                    Text("SAVE")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .kerning(1.0)
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            Capsule()
+                                                .fill(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
+                                                .shadow(color: Color.heroPink.opacity(0.4), radius: 6, x: 0, y: 3)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .disabled((Double(dailyLimitText) ?? 0) <= 0)
+                                .opacity((Double(dailyLimitText) ?? 0) <= 0 ? 0.4 : 1.0)
                             }
-                            Toggle("Rollover unused budget", isOn: Binding(
-                                get: { budgetSettings?.rolloverEnabled ?? false },
-                                set: { newValue in
-                                    budgetSettings?.rolloverEnabled = newValue
+
+                            Divider().background(Color.white.opacity(0.07))
+
+                            // Currency picker
+                            HStack {
+                                Text("Currency")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Picker("", selection: $selectedCurrency) {
+                                    ForEach(currencies, id: \.self) { code in
+                                        Text(code).tag(code)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(Color.heroPink)
+                                .onChange(of: selectedCurrency) { _, newVal in
+                                    budgetSettings?.currencyCode = newVal
                                     try? modelContext.save()
                                 }
-                            ))
+                            }
+
+                            Divider().background(Color.white.opacity(0.07))
+
+                            darkToggle(isOn: Binding(
+                                get: { budgetSettings?.rolloverEnabled ?? false },
+                                set: { budgetSettings?.rolloverEnabled = $0; try? modelContext.save() }
+                            ), label: "Roll over unused budget daily")
                         }
                         .glassCard()
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            GlassSectionHeader(title: "Privacy", systemImage: "lock.shield")
-                            Toggle("Tag expenses with location", isOn: Binding(
+                        // ── PRIVACY ────────────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
+                            GlassSectionHeader(title: "Privacy & Location", systemImage: "lock.shield")
+
+                            darkToggle(isOn: Binding(
                                 get: { locationManager.isLocationTaggingEnabled },
                                 set: { locationManager.isLocationTaggingEnabled = $0 }
-                            ))
-                            Text("Location is stored only on this device and in your private iCloud data — it's never sent to any server.")
-                                .font(.caption)
-                                .opacity(0.6)
-                        }
-                        .glassCard()
+                            ), label: "Tag expenses with location")
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            GlassSectionHeader(title: "Location Alerts", systemImage: "bell.badge")
-                            Toggle("Alert me near high-spending places", isOn: Binding(
+                            Divider().background(Color.white.opacity(0.07))
+
+                            darkToggle(isOn: Binding(
                                 get: { geofenceManager.isMonitoringEnabled },
                                 set: { newValue in
                                     if newValue {
@@ -63,23 +145,69 @@ struct SettingsView: View {
                                         geofenceManager.disableMonitoring()
                                     }
                                 }
-                            ))
-                            Text("This needs \"Always\" location access — a bigger permission than expense tagging — because it has to work while the app is closed. Only places you've set a spending limit for (via the Map tab) are monitored, up to 20 at a time.")
-                                .font(.caption)
-                                .opacity(0.6)
-                            if placesWithLimits.isEmpty {
-                                Text("No places have a spending limit set yet.")
-                                    .font(.caption2)
-                                    .opacity(0.5)
+                            ), label: "Alert near high-spending places")
+
+                            if geofenceManager.isMonitoringEnabled && placesWithLimits.isEmpty {
+                                infoNote("No places with a spending limit yet. Set limits in the Map tab.")
+                            } else {
+                                infoNote("Location data is stored only on your device and private iCloud — never sent to any server.")
                             }
                         }
                         .glassCard()
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            GlassSectionHeader(title: "Data", systemImage: "tray.full")
-                            Text("Export and iCloud sync controls go here (Phase 4).")
-                                .font(.caption)
-                                .opacity(0.6)
+                        // ── NOTIFICATIONS ──────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
+                            GlassSectionHeader(title: "Notifications", systemImage: "bell.badge")
+                            infoNote("Daily budget reminders and upcoming payment alerts coming in the next update.")
+                        }
+                        .glassCard()
+
+                        // ── DATA & EXPORT ──────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
+                            GlassSectionHeader(title: "Data & Export", systemImage: "tray.and.arrow.up")
+
+                            Button {
+                                showingExportAlert = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "doc.text")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color.heroPink)
+                                    Text("Export as CSV")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color.textPrimary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.textTertiary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .alert("Export Coming Soon", isPresented: $showingExportAlert) {
+                                Button("OK", role: .cancel) {}
+                            } message: {
+                                Text("CSV export will be available in the next update.")
+                            }
+
+                            Divider().background(Color.white.opacity(0.07))
+
+                            infoNote("Your data syncs privately via iCloud. To delete all data, remove the app.")
+                        }
+                        .glassCard()
+
+                        // ── ABOUT ──────────────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
+                            GlassSectionHeader(title: "About", systemImage: "info.circle")
+                            HStack {
+                                Text("ExpenseCompanion")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Color.textPrimary)
+                                Spacer()
+                                Text("v1.0")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.textTertiary)
+                            }
+                            infoNote("Built with SwiftUI + SwiftData. iCloud sync enabled.")
                         }
                         .glassCard()
                     }
@@ -87,16 +215,41 @@ struct SettingsView: View {
                     .padding(.bottom, 90)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
             .onAppear(perform: loadSettings)
         }
+        .preferredColorScheme(.dark)
     }
+
+    // MARK: - Sub-components
+
+    private func darkToggle(isOn: Binding<Bool>, label: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.textPrimary)
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(Color.heroPink)
+        }
+    }
+
+    private func infoNote(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11))
+            .foregroundStyle(Color.textTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // MARK: - Data
 
     private func loadSettings() {
         let repo = GoalRepository(context: modelContext)
         budgetSettings = try? repo.fetchOrCreateBudgetSettings()
         dailyLimitText = budgetSettings.map { String(format: "%.0f", $0.dailyLimit) } ?? "500"
+        selectedCurrency = budgetSettings?.currencyCode ?? "INR"
 
         let placeRepo = PlaceRepository(context: modelContext)
         placesWithLimits = ((try? placeRepo.allPlaces()) ?? []).filter { $0.spendingLimit != nil }

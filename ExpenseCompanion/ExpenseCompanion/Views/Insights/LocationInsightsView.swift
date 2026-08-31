@@ -2,10 +2,8 @@
 //  LocationInsightsView.swift
 //  ExpenseCompanion
 //
-//  Surfaces the generated insights ("You spend 40% more at X") and the list
-//  of saved frequent places with their monthly spend. Embedded into the Stats
-//  tab rather than a standalone tab, since it's most useful alongside the
-//  category breakdown someone's already looking at.
+//  Surfaces location-based insights and frequent-place spend summaries.
+//  Embedded at the bottom of the Stats tab.
 //
 
 import SwiftUI
@@ -21,7 +19,7 @@ struct LocationInsightsView: View {
     @State private var currencyCode = "INR"
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             if !insights.isEmpty {
                 insightsCard
             }
@@ -36,16 +34,24 @@ struct LocationInsightsView: View {
         LocationInsightsEngine.frequentPlaceCandidates(from: clusters)
     }
 
+    // MARK: - Insights Card
+
     private var insightsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             GlassSectionHeader(title: "Location Insights", systemImage: "lightbulb.fill")
             ForEach(insights) { insight in
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: insight.icon)
-                        .foregroundStyle(.purple)
-                        .frame(width: 20)
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.heroPink.opacity(0.12))
+                            .frame(width: 32, height: 32)
+                        Image(systemName: insight.icon)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.heroPink)
+                    }
                     Text(insight.text)
-                        .font(.subheadline)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(Color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -53,29 +59,36 @@ struct LocationInsightsView: View {
         .glassCard()
     }
 
-    private var frequentPlacesCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            GlassSectionHeader(title: "Frequent Places", systemImage: "mappin.and.ellipse")
-            ForEach(frequentPlaceClusters) { cluster in
-                HStack {
-                    Circle()
-                        .fill(cluster.dominantCategory.color.opacity(0.2))
-                        .frame(width: 36, height: 36)
-                        .overlay(Image(systemName: cluster.dominantCategory.symbolName).font(.caption).foregroundStyle(cluster.dominantCategory.color))
+    // MARK: - Frequent Places Card
 
-                    VStack(alignment: .leading, spacing: 2) {
+    private var frequentPlacesCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GlassSectionHeader(title: "Frequent Places", systemImage: "mappin.and.ellipse")
+                .padding(.bottom, 10)
+            ForEach(Array(frequentPlaceClusters.enumerated()), id: \.element.id) { idx, cluster in
+                HStack(spacing: 14) {
+                    CategoryBadge(category: cluster.dominantCategory, size: 38)
+
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(savedLabel(for: cluster) ?? cluster.displayName)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.textPrimary)
                         Text("\(cluster.visitCount) visits")
-                            .font(.caption)
-                            .opacity(0.6)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.textTertiary)
                     }
 
                     Spacer()
 
                     Text(CurrencyFormatter.format(cluster.totalAmount, currencyCode: currencyCode))
-                        .font(.subheadline.weight(.semibold))
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
                         .monospacedDigit()
+                        .foregroundStyle(Color.textPrimary)
+                }
+                .padding(.vertical, 8)
+
+                if idx < frequentPlaceClusters.count - 1 {
+                    Divider().background(Color.white.opacity(0.07))
                 }
             }
         }

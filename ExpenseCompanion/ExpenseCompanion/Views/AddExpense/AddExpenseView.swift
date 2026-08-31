@@ -2,10 +2,6 @@
 //  AddExpenseView.swift
 //  ExpenseCompanion
 //
-//  Custom half-sheet for logging a new expense. Location resolution kicks
-//  off automatically on appear (if enabled) so it's usually ready by the
-//  time the user has typed the amount.
-//
 
 import SwiftUI
 import SwiftData
@@ -20,7 +16,16 @@ struct AddExpenseView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                DynamicGradientBackground()
+                Color.appBackground.ignoresSafeArea()
+
+                // Subtle top glow
+                RadialGradient(
+                    colors: [Color.heroPurple.opacity(0.25), Color.clear],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: 300
+                )
+                .ignoresSafeArea()
 
                 if let viewModel {
                     ScrollView {
@@ -40,14 +45,17 @@ struct AddExpenseView: View {
                             saveButton(viewModel: viewModel)
                         }
                         .padding(16)
+                        .padding(.bottom, 20)
                     }
                 }
             }
             .navigationTitle("Add Expense")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.appBackground, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.textSecondary)
                 }
             }
             .onAppear {
@@ -61,49 +69,32 @@ struct AddExpenseView: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .presentationBackground(Color.appBackground)
+        .preferredColorScheme(.dark)
     }
 
-    // MARK: - Sections
-
     private func amountField(viewModel: AddExpenseViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Amount")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-                .kerning(0.5)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("AMOUNT")
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(1.2)
+                .foregroundStyle(Color.textTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(CurrencyFormatter.symbol(for: "INR"))
-                    .font(.system(.title2, design: .rounded).weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.textTertiary)
                 TextField("0", text: Binding(
                     get: { viewModel.amountText },
                     set: { viewModel.amountText = $0 }
                 ))
                 .keyboardType(.decimalPad)
-                .font(.system(.title, design: .rounded).weight(.bold))
+                .font(.system(size: 42, weight: .bold, design: .rounded))
                 .monospacedDigit()
+                .foregroundStyle(Color.textPrimary)
                 .focused($amountFieldFocused)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard()
-    }
-
-    private func categoryPicker(viewModel: AddExpenseViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Category")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-                .kerning(0.5)
-
-            LazyVGrid(columns: categoryGridColumns, spacing: 10) {
-                ForEach(ExpenseCategory.allCases) { cat in
-                    categoryCell(cat: cat, viewModel: viewModel)
-                }
-            }
-        }
         .glassCard()
     }
 
@@ -118,18 +109,18 @@ struct AddExpenseView: View {
             Haptics.light()
         } label: {
             VStack(spacing: 6) {
-                Image(systemName: cat.symbolName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(isSelected ? .white : cat.color)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(isSelected ? AnyShapeStyle(cat.color.gradient) : AnyShapeStyle(cat.color.opacity(0.12)))
-                    )
-                    .shadow(color: isSelected ? cat.color.opacity(0.35) : .clear, radius: 6, x: 0, y: 3)
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? cat.color.opacity(0.25) : Color.white.opacity(0.06))
+                        .frame(width: 46, height: 46)
+                        .shadow(color: isSelected ? cat.color.opacity(0.4) : .clear, radius: 8, x: 0, y: 4)
+                    Image(systemName: cat.symbolName)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(isSelected ? cat.color : Color.textTertiary)
+                }
                 Text(cat.rawValue)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                    .font(.system(size: 9, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? cat.color : Color.textTertiary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
@@ -138,49 +129,71 @@ struct AddExpenseView: View {
         .buttonStyle(.plain)
     }
 
+    private func categoryPicker(viewModel: AddExpenseViewModel) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("CATEGORY")
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(1.2)
+                .foregroundStyle(Color.textTertiary)
+
+            LazyVGrid(columns: categoryGridColumns, spacing: 12) {
+                ForEach(ExpenseCategory.allCases) { cat in
+                    categoryCell(cat: cat, viewModel: viewModel)
+                }
+            }
+        }
+        .glassCard()
+    }
+
     private func noteField(viewModel: AddExpenseViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Note")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-                .kerning(0.5)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("NOTE")
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(1.2)
+                .foregroundStyle(Color.textTertiary)
             TextField("Add a note...", text: Binding(
                 get: { viewModel.note },
                 set: { viewModel.note = $0 }
             ))
-            .foregroundStyle(.primary)
+            .foregroundStyle(Color.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
     }
 
     private func locationChip(viewModel: AddExpenseViewModel) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "mappin.and.ellipse")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.secondary)
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(width: 34, height: 34)
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.textTertiary)
+            }
 
             if viewModel.isResolvingLocation {
-                Text("Finding your location…")
+                Text("Finding location…")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.textSecondary)
                 ProgressView()
                     .scaleEffect(0.7)
+                    .tint(.white)
             } else if let place = viewModel.resolvedPlaceName {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(place)
-                        .font(.subheadline.weight(.medium))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.textPrimary)
                     if let locality = viewModel.resolvedLocality {
                         Text(locality)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.textTertiary)
                     }
                 }
             } else {
                 Text(viewModel.locationTaggingEnabled ? "Location unavailable" : "Location off")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.textTertiary)
             }
 
             Spacer()
@@ -189,8 +202,8 @@ struct AddExpenseView: View {
                 Task { await viewModel.resolveLocationIfEnabled() }
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.textTertiary)
             }
             .disabled(!viewModel.locationTaggingEnabled)
         }
@@ -199,36 +212,35 @@ struct AddExpenseView: View {
 
     private func datePicker(viewModel: AddExpenseViewModel) -> some View {
         HStack {
-            Text("Date")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-                .kerning(0.5)
+            Text("DATE")
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(1.2)
+                .foregroundStyle(Color.textTertiary)
             Spacer()
             DatePicker("", selection: Binding(
                 get: { viewModel.date },
                 set: { viewModel.date = $0 }
             ), displayedComponents: [.date, .hourAndMinute])
             .labelsHidden()
+            .colorScheme(.dark)
         }
         .glassCard()
     }
 
     private func saveButton(viewModel: AddExpenseViewModel) -> some View {
         Button {
-            if viewModel.save() {
-                dismiss()
-            }
+            if viewModel.save() { dismiss() }
         } label: {
             Text("Save Expense")
-                .font(.headline)
+                .font(.system(size: 16, weight: .bold))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
+                .padding(.vertical, 17)
                 .background(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(viewModel.isValid
-                              ? AnyShapeStyle(Color.accentColor.gradient)
-                              : AnyShapeStyle(Color.gray.opacity(0.3)))
+                              ? AnyShapeStyle(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
+                              : AnyShapeStyle(Color.white.opacity(0.08)))
+                        .shadow(color: viewModel.isValid ? Color.heroPink.opacity(0.4) : .clear, radius: 12, x: 0, y: 4)
                 )
                 .foregroundStyle(.white)
         }

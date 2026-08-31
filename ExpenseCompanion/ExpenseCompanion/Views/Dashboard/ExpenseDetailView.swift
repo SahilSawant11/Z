@@ -17,43 +17,53 @@ struct ExpenseDetailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                DynamicGradientBackground()
+                Color.appBackground.ignoresSafeArea()
+                RadialGradient(
+                    colors: [expense.category.color.opacity(0.2), Color.clear],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: 300
+                )
+                .ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 14) {
-                        // Hero card
-                        VStack(spacing: 12) {
+                        // Hero
+                        VStack(spacing: 14) {
                             CategoryBadge(category: expense.category, size: 64)
-                                .shadow(color: expense.category.color.opacity(0.35), radius: 12, x: 0, y: 6)
+                                .shadow(color: expense.category.color.opacity(0.4), radius: 16, x: 0, y: 8)
 
                             Text(CurrencyFormatter.format(expense.amount))
-                                .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                                .font(.system(size: 40, weight: .bold, design: .rounded))
                                 .monospacedDigit()
+                                .foregroundStyle(Color.textPrimary)
 
-                            Text(expense.category.rawValue)
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.secondary)
+                            Text(expense.category.rawValue.uppercased())
+                                .font(.system(size: 11, weight: .semibold))
+                                .kerning(1.5)
+                                .foregroundStyle(Color.textTertiary)
                         }
                         .frame(maxWidth: .infinity)
                         .glassCard()
 
                         if !expense.note.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 10) {
                                 GlassSectionHeader(title: "Note", systemImage: "text.alignleft")
                                 Text(expense.note)
                                     .font(.subheadline)
+                                    .foregroundStyle(Color.textSecondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .glassCard()
                         }
 
                         if let coordinate = expense.coordinate {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 10) {
                                 GlassSectionHeader(title: expense.placeName ?? "Location", systemImage: "mappin.and.ellipse")
                                 if let locality = expense.locality {
                                     Text(locality)
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Color.textTertiary)
                                 }
                                 Map(position: $cameraPosition) {
                                     Marker(expense.placeName ?? "Expense", coordinate: coordinate)
@@ -73,27 +83,32 @@ struct ExpenseDetailView: View {
                             .glassCard()
                         }
 
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             GlassSectionHeader(title: "Date", systemImage: "calendar")
                             Text(expense.date.formatted(date: .long, time: .shortened))
                                 .font(.subheadline)
+                                .foregroundStyle(Color.textSecondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .glassCard()
 
-                        // Delete button
+                        // Delete
                         Button(role: .destructive) {
                             showingDeleteConfirm = true
                         } label: {
                             Label("Delete Expense", systemImage: "trash")
-                                .font(.subheadline.weight(.semibold))
+                                .font(.system(size: 15, weight: .semibold))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
+                                .padding(.vertical, 15)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                                         .fill(Color.red.opacity(0.12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .strokeBorder(Color.red.opacity(0.25), lineWidth: 1)
+                                        )
                                 )
-                                .foregroundStyle(.red)
+                                .foregroundStyle(Color.red.opacity(0.85))
                         }
                         .confirmationDialog("Delete this expense?", isPresented: $showingDeleteConfirm, titleVisibility: .visible) {
                             Button("Delete", role: .destructive) {
@@ -110,11 +125,14 @@ struct ExpenseDetailView: View {
             }
             .navigationTitle("Expense Detail")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.appBackground, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
+                        .foregroundStyle(Color.textSecondary)
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
