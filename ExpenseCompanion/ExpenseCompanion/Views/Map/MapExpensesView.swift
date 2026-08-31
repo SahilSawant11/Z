@@ -13,6 +13,7 @@ import SwiftData
 
 struct MapExpensesView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var allExpenses: [Expense] = []
     @State private var cameraPosition: MapCameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
@@ -49,10 +50,12 @@ struct MapExpensesView: View {
                 .mapControls { MapCompass(); MapScaleView() }
                 .ignoresSafeArea()
 
-                // ── GTA V dark vignette ────────────────────────────────────
-                // Dark radial gradient — heavy at edges, clear at center
+                // ── Adaptive vignette overlay ──────────────────────────────
+                // Dark mode: dramatic GTA-V black edges
+                // Light mode: soft mist so the map stays readable
+                let vignetteOpacity: Double = colorScheme == .dark ? 0.65 : 0.20
                 RadialGradient(
-                    colors: [Color.clear, Color.black.opacity(0.68)],
+                    colors: [Color.clear, Color.black.opacity(vignetteOpacity)],
                     center: .center,
                     startRadius: 100,
                     endRadius: 480
@@ -60,18 +63,18 @@ struct MapExpensesView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-                // Top fade (protects header readability)
+                // Top + bottom edge fades (header / tab bar protection)
+                let fadeOpacity: Double = colorScheme == .dark ? 0.70 : 0.45
                 VStack {
                     LinearGradient(
-                        colors: [Color.black.opacity(0.72), Color.clear],
+                        colors: [Color.appBackground.opacity(fadeOpacity), Color.clear],
                         startPoint: .top, endPoint: .bottom
                     )
                     .frame(height: 160)
                     .ignoresSafeArea(edges: .top)
                     Spacer()
-                    // Bottom fade (protects tab bar area)
                     LinearGradient(
-                        colors: [Color.clear, Color.black.opacity(0.55)],
+                        colors: [Color.clear, Color.appBackground.opacity(fadeOpacity * 0.8)],
                         startPoint: .top, endPoint: .bottom
                     )
                     .frame(height: 130)
@@ -131,7 +134,7 @@ struct MapExpensesView: View {
                     .presentationDragIndicator(.visible)
             }
         }
-        .preferredColorScheme(.dark)
+        
     }
 
     // MARK: - Filter Bar
@@ -162,6 +165,7 @@ struct MapExpensesView: View {
 
     private func filterChip(symbol: String, label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
         let selected = isSelected
+        let chipBg: Color = colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.07)
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { action() }
             Haptics.light()
@@ -179,7 +183,7 @@ struct MapExpensesView: View {
             .padding(.vertical, 7)
             .background(
                 Capsule()
-                    .fill(selected ? color : Color.white.opacity(0.08))
+                    .fill(selected ? color : chipBg)
                     .shadow(color: selected ? color.opacity(0.4) : .clear, radius: 8, x: 0, y: 2)
             )
         }

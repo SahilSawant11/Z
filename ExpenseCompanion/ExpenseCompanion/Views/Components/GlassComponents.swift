@@ -2,44 +2,105 @@
 //  GlassComponents.swift
 //  ExpenseCompanion
 //
-//  Dark fintech design system. All cards use dark frosted glass.
-//  The hero card uses a hot-pink → purple gradient.
+//  Dark fintech design system — now fully adaptive for light + dark mode.
+//  All colour tokens use UIColor's dynamic provider so they respond to
+//  the user's colour-scheme preference automatically.
 //
 
 import SwiftUI
+import UIKit
 
-// MARK: - App Colors
+// MARK: - App Theme
 
-extension Color {
-    static let appBackground   = Color(red: 0.051, green: 0.051, blue: 0.063) // #0D0D10
-    static let cardSurface     = Color.white.opacity(0.05)
-    static let cardBorder      = Color.white.opacity(0.09)
-    static let textPrimary     = Color.white
-    static let textSecondary   = Color.white.opacity(0.45)
-    static let textTertiary    = Color.white.opacity(0.28)
-    static let heroPink        = Color(red: 1.0,   green: 0.176, blue: 0.471) // #FF2D78
-    static let heroPurple      = Color(red: 0.753, green: 0.149, blue: 0.827) // #C026D3
-    static let heroDeep        = Color(red: 0.486, green: 0.231, blue: 0.929) // #7C3AED
-    static let accentBlue      = Color(red: 0.231, green: 0.510, blue: 0.965) // #3B82F6
-    static let accentIndigo    = Color(red: 0.388, green: 0.400, blue: 0.945) // #6366F1
+enum AppTheme: String, CaseIterable {
+    case system = "System"
+    case light  = "Light"
+    case dark   = "Dark"
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light:  return .light
+        case .dark:   return .dark
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .system: return "iphone"
+        case .light:  return "sun.max"
+        case .dark:   return "moon"
+        }
+    }
 }
 
-// MARK: - Dark Background
+// MARK: - App Colors  (adaptive via UIColor dynamic provider)
+
+extension Color {
+    /// Deep dark / warm light-lavender page background
+    static let appBackground = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor(red: 0.051, green: 0.051, blue: 0.063, alpha: 1)   // #0D0D10
+            : UIColor(red: 0.941, green: 0.937, blue: 0.965, alpha: 1)   // #F0EEF6
+    })
+
+    /// Card fill — almost transparent on dark, solid white on light
+    static let cardSurface = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.05)
+            : UIColor(white: 1, alpha: 1.0)
+    })
+
+    /// Subtle card border
+    static let cardBorder = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.09)
+            : UIColor(white: 0, alpha: 0.06)
+    })
+
+    /// Primary text — white / near-black
+    static let textPrimary = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor.white
+            : UIColor(red: 0.11, green: 0.11, blue: 0.118, alpha: 1)
+    })
+
+    /// Secondary text — 45% white / 60% dark
+    static let textSecondary = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.45)
+            : UIColor(red: 0.235, green: 0.235, blue: 0.263, alpha: 0.65)
+    })
+
+    /// Tertiary / hint text
+    static let textTertiary = Color(UIColor { t in
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1, alpha: 0.28)
+            : UIColor(red: 0.235, green: 0.235, blue: 0.263, alpha: 0.38)
+    })
+
+    // ── Accent colours (same in both modes) ─────────────────────────────
+    static let heroPink    = Color(red: 1.0,   green: 0.176, blue: 0.471) // #FF2D78
+    static let heroPurple  = Color(red: 0.753, green: 0.149, blue: 0.827) // #C026D3
+    static let heroDeep    = Color(red: 0.486, green: 0.231, blue: 0.929) // #7C3AED
+    static let accentBlue  = Color(red: 0.231, green: 0.510, blue: 0.965) // #3B82F6
+    static let accentIndigo = Color(red: 0.388, green: 0.400, blue: 0.945) // #6366F1
+}
+
+// MARK: - Adaptive Background
 
 struct DynamicGradientBackground: View {
-    // Keep EnvironmentObject signature so existing callers don't break,
-    // but we no longer use it — background is always deep dark.
     @EnvironmentObject private var timeProvider: TimeOfDayProvider
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
-            Color.appBackground
-                .ignoresSafeArea()
-
-            // Subtle radial glow at top — like the reference screenshots
+            Color.appBackground.ignoresSafeArea()
+            // Top radial glow — dramatic in dark, whisper-soft in light
             RadialGradient(
                 colors: [
-                    Color(red: 0.30, green: 0.06, blue: 0.50).opacity(0.55),
+                    Color(red: 0.30, green: 0.06, blue: 0.50)
+                        .opacity(colorScheme == .dark ? 0.55 : 0.06),
                     Color.clear
                 ],
                 center: .init(x: 0.5, y: -0.1),
@@ -51,18 +112,19 @@ struct DynamicGradientBackground: View {
     }
 }
 
-// MARK: - Dark Glass Card
+// MARK: - Adaptive Glass Card
 
 struct GlassCardModifier: ViewModifier {
     var cornerRadius: CGFloat = 20
     var padding: CGFloat = 16
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.cardSurface)
+                    .fill(colorScheme == .dark ? Color.cardSurface : Color.white)
                     .background(
                         .ultraThinMaterial,
                         in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -72,7 +134,11 @@ struct GlassCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(Color.cardBorder, lineWidth: 1)
             }
-            .shadow(color: .black.opacity(0.45), radius: 20, x: 0, y: 8)
+            .shadow(
+                color: colorScheme == .dark ? .black.opacity(0.45) : .black.opacity(0.07),
+                radius: colorScheme == .dark ? 20 : 14,
+                x: 0, y: colorScheme == .dark ? 8 : 5
+            )
     }
 }
 
@@ -82,15 +148,13 @@ extension View {
     }
 }
 
-// MARK: - Hero Gradient Card
+// MARK: - Hero Gradient Card (always vibrant — no dark/light change)
 
-/// The showpiece pink-magenta-purple gradient card.
 struct HeroCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
         ZStack {
-            // Background gradient
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(
                     LinearGradient(
@@ -100,13 +164,11 @@ struct HeroCard<Content: View>: View {
                     )
                 )
 
-            // Dot-matrix texture overlay
             DotMatrixView()
                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .blendMode(.plusLighter)
                 .opacity(0.18)
 
-            // Subtle inner glow at top
             VStack {
                 Ellipse()
                     .fill(Color.white.opacity(0.12))
@@ -116,8 +178,7 @@ struct HeroCard<Content: View>: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
 
-            content
-                .padding(22)
+            content.padding(22)
         }
         .shadow(color: Color.heroPink.opacity(0.35), radius: 28, x: 0, y: 10)
     }
@@ -131,7 +192,7 @@ struct DotMatrixView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let spacingX = geo.size.width / CGFloat(columns)
+            let spacingX = geo.size.width  / CGFloat(columns)
             let spacingY = geo.size.height / CGFloat(rows)
 
             ForEach(0..<rows, id: \.self) { row in
@@ -139,7 +200,6 @@ struct DotMatrixView: View {
                     let x = spacingX * CGFloat(col) + spacingX / 2
                     let y = spacingY * CGFloat(row) + spacingY / 2
                     let isFilled = (row + col) % 3 == 0
-
                     Circle()
                         .fill(Color.white)
                         .opacity(isFilled ? 0.9 : 0.25)
@@ -162,12 +222,12 @@ struct PillBadge: View {
             .font(.system(size: 11, weight: .semibold))
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
-            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.55))
+            .foregroundStyle(isSelected ? Color.black : Color.textSecondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.white : Color.white.opacity(0.1))
+                    .fill(isSelected ? Color.white : Color.cardBorder)
             )
     }
 }
@@ -182,14 +242,12 @@ struct ProgressRing: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(tint.opacity(trackOpacity), lineWidth: lineWidth)
+            Circle().stroke(tint.opacity(trackOpacity), lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: min(max(progress, 0), 1))
                 .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
-            // Glow
             Circle()
                 .trim(from: 0, to: min(max(progress, 0), 1))
                 .stroke(tint.opacity(0.3), style: StrokeStyle(lineWidth: lineWidth + 4, lineCap: .round))
@@ -214,7 +272,7 @@ struct GlassSectionHeader: View {
                     .foregroundStyle(Color.textTertiary)
             }
             Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold, design: .default))
+                .font(.system(size: 11, weight: .semibold))
                 .kerning(1.0)
                 .foregroundStyle(Color.textTertiary)
             Spacer()
@@ -233,9 +291,6 @@ struct CategoryBadge: View {
             .font(.system(size: size * 0.42, weight: .semibold))
             .foregroundStyle(category.color)
             .frame(width: size, height: size)
-            .background(
-                Circle()
-                    .fill(category.color.opacity(0.15))
-            )
+            .background(Circle().fill(category.color.opacity(0.15)))
     }
 }

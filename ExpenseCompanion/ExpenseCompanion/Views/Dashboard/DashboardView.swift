@@ -72,7 +72,7 @@ struct DashboardView: View {
                 GoalsListView()
             }
         }
-        .preferredColorScheme(.dark)
+        
     }
 
     // MARK: - Hero Card

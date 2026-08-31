@@ -126,7 +126,7 @@ struct AddGoalView: View {
         }
         .presentationDetents([.large])
         .presentationBackground(Color.appBackground)
-        .preferredColorScheme(.dark)
+        
     }
 
     private var goalCategoryColumns: [GridItem] {

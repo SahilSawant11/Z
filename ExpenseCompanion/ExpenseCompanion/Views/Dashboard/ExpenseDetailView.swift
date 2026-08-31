@@ -133,6 +133,6 @@ struct ExpenseDetailView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        
     }
 }

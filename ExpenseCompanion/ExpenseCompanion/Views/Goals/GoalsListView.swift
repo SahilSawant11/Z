@@ -88,7 +88,7 @@ struct GoalsListView: View {
                 AddGoalView()
             }
         }
-        .preferredColorScheme(.dark)
+        
     }
 
     private func loadGoals() {

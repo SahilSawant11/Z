@@ -2,9 +2,9 @@
 //  RootTabView.swift
 //  ExpenseCompanion
 //
-//  Liquid-glass pill tab bar. The selection indicator is a morphing blob
-//  that "stretches" toward the new tab and snaps back — the rubber-band
-//  water-drop effect seen in Apple Music on iOS 26.
+//  Theme-controlled root. Reads @AppStorage("appTheme") and applies
+//  preferredColorScheme to the whole app — all sub-views inherit it.
+//  Liquid glass pill tab bar adapts to light / dark automatically.
 //
 
 import SwiftUI
@@ -12,19 +12,19 @@ import SwiftData
 
 struct RootTabView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var selectedTab: Tab = .dashboard
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("appTheme") private var appTheme: AppTheme = .dark
 
-    // Liquid blob state
-    @State private var blobLeadX: CGFloat = 0    // follows with spring (trailing edge)
-    @State private var blobLeadXImmediate: CGFloat = 0  // jumps instantly (leading edge)
-    @State private var barWidth: CGFloat = 0
+    @State private var selectedTab: Tab = .dashboard
+    @State private var blobLeadX: CGFloat = 0
+    @State private var blobLeadXImmediate: CGFloat = 0
 
     enum Tab: String, CaseIterable {
         case dashboard = "Home"
-        case map = "Map"
-        case stats = "Stats"
-        case goals = "Goals"
-        case settings = "Settings"
+        case map       = "Map"
+        case stats     = "Stats"
+        case goals     = "Goals"
+        case settings  = "Settings"
 
         var symbol: String {
             switch self {
@@ -63,47 +63,44 @@ struct RootTabView: View {
                     .toolbar(.hidden, for: .tabBar)
             }
 
-            // Liquid glass tab bar
             liquidTabBar
                 .padding(.bottom, 22)
         }
-        .preferredColorScheme(.dark)
         .ignoresSafeArea(edges: .bottom)
+        // ── Single source of truth for the colour scheme ───────────────
+        .preferredColorScheme(appTheme.colorScheme)
     }
 
     // MARK: - Liquid Glass Tab Bar
 
     private var liquidTabBar: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let count = CGFloat(Tab.allCases.count)
-            let tabW = w / count
+            let w    = geo.size.width
+            let tabW = w / CGFloat(Tab.allCases.count)
             let blobH: CGFloat = 44
+            let isDark = colorScheme == .dark
 
             ZStack(alignment: .leading) {
-                // Frosted pill background
+                // Adaptive frosted pill background
                 Capsule()
-                    .fill(Color(red: 0.10, green: 0.10, blue: 0.13).opacity(0.92))
+                    .fill(isDark
+                          ? Color(red: 0.10, green: 0.10, blue: 0.13).opacity(0.92)
+                          : Color.white.opacity(0.88))
                     .background(.ultraThinMaterial, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
-                    .shadow(color: .black.opacity(0.55), radius: 22, x: 0, y: 8)
+                    .overlay(Capsule().strokeBorder(Color.cardBorder, lineWidth: 1))
+                    .shadow(color: .black.opacity(isDark ? 0.55 : 0.12), radius: 22, x: 0, y: 8)
 
-                // ── Liquid blob ─────────────────────────────────────────────
-                // The blob spans from the slower-moving blobLeadX to the
-                // instant-moving blobLeadXImmediate, creating a stretch effect.
+                // Liquid gradient blob
                 let leftCenter  = min(blobLeadX, blobLeadXImmediate)
                 let rightCenter = max(blobLeadX, blobLeadXImmediate)
-                let blobLeft   = leftCenter - blobH / 2
-                let blobWidth  = (rightCenter - leftCenter) + blobH
+                let blobLeft  = leftCenter - blobH / 2
+                let blobWidth = (rightCenter - leftCenter) + blobH
 
                 RoundedRectangle(cornerRadius: blobH / 2, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.heroPink, Color.heroPurple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .fill(LinearGradient(
+                        colors: [Color.heroPink, Color.heroPurple],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
                     .frame(width: max(blobWidth, blobH), height: blobH)
                     .offset(x: blobLeft)
                     .shadow(color: Color.heroPink.opacity(0.55), radius: 14, x: 0, y: 4)
@@ -118,7 +115,7 @@ struct RootTabView: View {
                         } label: {
                             Image(systemName: tab.symbol)
                                 .font(.system(size: 19, weight: isSelected ? .bold : .regular))
-                                .foregroundStyle(isSelected ? .white : Color.white.opacity(0.32))
+                                .foregroundStyle(isSelected ? .white : Color.textTertiary)
                                 .scaleEffect(isSelected ? 1.08 : 1.0)
                                 .frame(width: tabW, height: geo.size.height)
                                 .contentShape(Rectangle())
@@ -129,8 +126,6 @@ struct RootTabView: View {
                 }
             }
             .onAppear {
-                barWidth = w
-                // Initialise blob at current tab
                 let idx = CGFloat(Tab.allCases.firstIndex(of: selectedTab) ?? 0)
                 let center = tabW * idx + tabW / 2
                 blobLeadX = center
@@ -141,17 +136,10 @@ struct RootTabView: View {
         .padding(.horizontal, 28)
     }
 
-    // MARK: - Tab Switch
-
     private func switchTab(to tab: Tab, idx: Int, tabW: CGFloat) {
         guard tab != selectedTab else { return }
-
         let newCenter = tabW * CGFloat(idx) + tabW / 2
-
-        // Leading edge jumps immediately → creates the stretch
         blobLeadXImmediate = newCenter
-
-        // Trailing edge follows with spring → snap back
         withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
             blobLeadX = newCenter
             selectedTab = tab

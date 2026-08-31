@@ -70,7 +70,7 @@ struct AddExpenseView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(Color.appBackground)
-        .preferredColorScheme(.dark)
+        
     }
 
     private func amountField(viewModel: AddExpenseViewModel) -> some View {

@@ -68,7 +68,7 @@ struct LocationClusterDetailView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        
     }
 
     // MARK: - Summary Card
@@ -310,7 +310,7 @@ private struct LabelPlaceView: View {
         }
         .presentationDetents([.medium])
         .presentationBackground(Color.appBackground)
-        .preferredColorScheme(.dark)
+        
     }
 
     private func save() {

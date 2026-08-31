@@ -17,6 +17,8 @@ struct SettingsView: View {
     @State private var placesWithLimits: [FrequentPlace] = []
     @State private var showingExportAlert = false
     @FocusState private var budgetFieldFocused: Bool
+    @AppStorage("liveActivityEnabled") private var liveActivityEnabled = true
+    @AppStorage("appTheme") private var appTheme: AppTheme = .dark
 
     private let currencies = ["INR", "USD", "EUR", "GBP", "JPY", "AED", "SGD", "CAD", "AUD"]
 
@@ -46,6 +48,44 @@ struct SettingsView: View {
                             Spacer()
                         }
                         .padding(.top, 4)
+
+                        // ── APPEARANCE ─────────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
+                            GlassSectionHeader(title: "Appearance", systemImage: "paintbrush")
+
+                            HStack(spacing: 10) {
+                                ForEach(AppTheme.allCases, id: \.self) { theme in
+                                    let isSelected = appTheme == theme
+                                    Button {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            appTheme = theme
+                                        }
+                                        Haptics.light()
+                                    } label: {
+                                        VStack(spacing: 7) {
+                                            Image(systemName: theme.icon)
+                                                .font(.system(size: 18, weight: .semibold))
+                                                .foregroundStyle(isSelected ? .white : Color.textSecondary)
+                                            Text(theme.rawValue)
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(isSelected ? .white : Color.textSecondary)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 13)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .fill(isSelected
+                                                      ? AnyShapeStyle(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
+                                                      : AnyShapeStyle(Color.cardBorder))
+                                                .shadow(color: isSelected ? Color.heroPink.opacity(0.35) : .clear, radius: 8, x: 0, y: 3)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                                }
+                            }
+                        }
+                        .glassCard()
 
                         // ── BUDGET ─────────────────────────────────────────
                         VStack(alignment: .leading, spacing: 14) {
@@ -155,6 +195,21 @@ struct SettingsView: View {
                         }
                         .glassCard()
 
+                        // ── DYNAMIC ISLAND ────────────────────────────────────
+                        VStack(alignment: .leading, spacing: 14) {
+                            GlassSectionHeader(title: "Dynamic Island", systemImage: "dot.radiowaves.left.and.right")
+
+                            darkToggle(isOn: $liveActivityEnabled, label: "Show budget in Dynamic Island")
+                                .onChange(of: liveActivityEnabled) { _, enabled in
+                                    if !enabled {
+                                        BudgetActivityManager.shared.endImmediately()
+                                    }
+                                }
+
+                            infoNote("Live budget tracker appears in the Dynamic Island and Lock Screen while the app is running.")
+                        }
+                        .glassCard()
+
                         // ── NOTIFICATIONS ──────────────────────────────────
                         VStack(alignment: .leading, spacing: 14) {
                             GlassSectionHeader(title: "Notifications", systemImage: "bell.badge")
@@ -219,7 +274,7 @@ struct SettingsView: View {
             .toolbar(.hidden, for: .navigationBar)
             .onAppear(perform: loadSettings)
         }
-        .preferredColorScheme(.dark)
+        
     }
 
     // MARK: - Sub-components

@@ -78,7 +78,7 @@ struct StatsView: View {
             .toolbar(.hidden, for: .navigationBar)
             .onAppear(perform: loadExpenses)
         }
-        .preferredColorScheme(.dark)
+        
     }
 
 

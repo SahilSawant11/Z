@@ -23,8 +23,13 @@ final class BudgetActivityManager {
     /// Start a new activity or update the existing one.
     func startOrUpdate(spent: Double, limit: Double, txCount: Int,
                        currencyCode: String, currencySymbol: String) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled,
-              limit > 0 else { return }
+        // Respect the in-app toggle
+        let enabled = UserDefaults.standard.object(forKey: "liveActivityEnabled") as? Bool ?? true
+        guard enabled else {
+            endImmediately()
+            return
+        }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled, limit > 0 else { return }
 
         let state = BudgetActivityAttributes.BudgetState(
             spent: spent,
