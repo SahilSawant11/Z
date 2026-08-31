@@ -213,7 +213,7 @@ struct DashboardView: View {
                     Text("\(Int(viewModel.budgetUsedFraction * 100))%")
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.textTertiary)
                     Text("used")
                         .font(.system(size: 10))
                         .foregroundStyle(Color.textTertiary)

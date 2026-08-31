@@ -72,6 +72,18 @@ final class DashboardViewModel {
                 currencySymbol: symbol
             )
 
+            // ── Update Widgets ──────────────────────────────────────────────
+            WidgetDataStore.update(
+                todayExpenses: todayExpenses,
+                todaySpent: todayTotal,
+                dailyLimit: limit,
+                currencySymbol: symbol,
+                currencyCode: code,
+                weekTotal: weekTotal,
+                monthTotal: monthTotal,
+                recentExpenses: recentExpenses
+            )
+
             errorMessage = nil
         } catch {
             errorMessage = "Couldn't load your data. Pull to refresh to try again."
