@@ -60,6 +60,18 @@ final class DashboardViewModel {
             budgetSettings = try goalRepository.fetchOrCreateBudgetSettings()
             primaryGoal = try goalRepository.allGoals().first
 
+            // ── Update Live Activity (Dynamic Island) ──────────────────────
+            let code   = budgetSettings?.currencyCode ?? "INR"
+            let symbol = CurrencyFormatter.symbol(for: code)
+            let limit  = budgetSettings?.dailyLimit ?? 0
+            BudgetActivityManager.shared.startOrUpdate(
+                spent: todayTotal,
+                limit: limit,
+                txCount: todayExpenses.count,
+                currencyCode: code,
+                currencySymbol: symbol
+            )
+
             errorMessage = nil
         } catch {
             errorMessage = "Couldn't load your data. Pull to refresh to try again."
