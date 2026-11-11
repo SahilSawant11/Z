@@ -20,7 +20,9 @@ struct ExpenseCompanionApp: App {
             Expense.self,
             FinancialGoal.self,
             DailyBudgetSettings.self,
-            FrequentPlace.self
+            FrequentPlace.self,
+            StudyAbroadPlan.self,
+            PlanMilestone.self
         ])
 
         let configuration = ModelConfiguration(

@@ -40,6 +40,13 @@ struct GoalsListView: View {
                         }
                         .padding(.top, 4)
 
+                        NavigationLink {
+                            GermanyPlanView()
+                        } label: {
+                            GermanyPlanEntryCard()
+                        }
+                        .buttonStyle(.plain)
+
                         if goals.isEmpty {
                             VStack(spacing: 14) {
                                 Image(systemName: "target")
@@ -133,6 +140,30 @@ struct GoalRowView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(Color.textTertiary)
             }
+        }
+        .glassCard()
+    }
+}
+
+struct GermanyPlanEntryCard: View {
+    var body: some View {
+        HStack(spacing: 14) {
+            Text("🇩🇪")
+                .font(.system(size: 26))
+                .frame(width: 54, height: 54)
+                .background(Circle().fill(Color.heroPurple.opacity(0.15)))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("MS in Germany")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.textPrimary)
+                Text("Cost timeline, savings projection and loan EMI")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textSecondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.textTertiary)
         }
         .glassCard()
     }
