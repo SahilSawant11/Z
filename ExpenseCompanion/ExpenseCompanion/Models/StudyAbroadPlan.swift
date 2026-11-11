@@ -53,9 +53,14 @@ final class PlanMilestone {
     var paidDate: Date?
     var note: String = ""
     var symbolName: String = "circle"
+    /// Stable identifier for milestones the app updates itself (e.g. "uniassist").
+    var key: String = ""
     var createdAt: Date = Date.now
 
-    init(title: String, amount: Double, dueDate: Date, symbolName: String = "circle", note: String = "") {
+    static let uniAssistKey = "uniassist"
+
+    init(title: String, amount: Double, dueDate: Date, symbolName: String = "circle", note: String = "", key: String = "") {
+        self.key = key
         self.id = UUID()
         self.title = title
         self.amount = amount
@@ -91,7 +96,7 @@ extension StudyAbroadPlan {
             PlanMilestone(title: "A1 German course", amount: 25_200, dueDate: date(2027, 2, 1),
                           symbolName: "character.book.closed.fill", note: "Placeholder: get a real quote"),
             PlanMilestone(title: "uni-assist × 10", amount: 31_050, dueDate: date(2027, 3, 1),
-                          symbolName: "paperplane.fill", note: "€75 first + €30 × 9 others"),
+                          symbolName: "paperplane.fill", note: "€75 first + €30 × 9 others", key: PlanMilestone.uniAssistKey),
             PlanMilestone(title: "Visa fee", amount: 6_750, dueDate: date(2027, 7, 1),
                           symbolName: "airplane.departure", note: "€75"),
         ]

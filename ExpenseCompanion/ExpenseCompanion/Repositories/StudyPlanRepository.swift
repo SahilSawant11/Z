@@ -53,6 +53,35 @@ final class StudyPlanRepository {
         try context.save()
     }
 
+    /// Points the plan's application-fee cost at the tracked programs: amount from the
+    /// computed fees, due date from the earliest deadline. Creates the cost if it is missing.
+    @discardableResult
+    func syncApplicationFees(_ apps: [UniversityApplication], plan: StudyAbroadPlan) throws -> PlanMilestone? {
+        guard !apps.isEmpty else { return nil }
+        let amount = (ApplicationFees.totalEUR(apps) * plan.eurToInr).rounded()
+        let earliest = apps.map(\.deadline).min() ?? .now
+        let all = try milestones()
+        let milestone = all.first { $0.key == PlanMilestone.uniAssistKey }
+            ?? all.first { $0.title.lowercased().hasPrefix("uni-assist") }
+
+        let target: PlanMilestone
+        if let milestone {
+            if milestone.isPaid { plan.currentSavings -= amount - milestone.amount }
+            target = milestone
+        } else {
+            target = PlanMilestone(title: "", amount: 0, dueDate: earliest,
+                                   symbolName: "paperplane.fill", key: PlanMilestone.uniAssistKey)
+            context.insert(target)
+        }
+        target.key = PlanMilestone.uniAssistKey
+        target.title = "Applications × \(apps.count)"
+        target.amount = amount
+        target.dueDate = earliest
+        target.note = "Synced from university tracker"
+        try context.save()
+        return target
+    }
+
     func save() throws {
         try context.save()
     }

@@ -12,6 +12,7 @@ struct GermanyPlanView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var plans: [StudyAbroadPlan]
     @Query(sort: \PlanMilestone.dueDate) private var milestones: [PlanMilestone]
+    @Query(sort: \UniversityApplication.deadline) private var applications: [UniversityApplication]
 
     @State private var editing: PlanMilestone?
     @State private var showingAdd = false
@@ -57,6 +58,8 @@ struct GermanyPlanView: View {
             VStack(spacing: 14) {
                 hero(plan: plan, projections: projections)
                 savingsCard(plan: plan)
+                NavigationLink { UniversityTrackerView() } label: { universitiesCard }
+                    .buttonStyle(.plain)
 
                 GlassSectionHeader(title: "Cost timeline", systemImage: "calendar")
                     .padding(.top, 6)
@@ -163,6 +166,43 @@ struct GermanyPlanView: View {
             }
             .foregroundStyle(.white)
         }
+    }
+
+    // MARK: - Universities
+
+    private var universitiesCard: some View {
+        let open = applications.filter { $0.status.isOpen && $0.daysToDeadline >= 0 }
+        let next = open.min { $0.deadline < $1.deadline }
+        let admits = applications.filter { $0.status == .admitted }.count
+        let subtitle: String = {
+            if applications.isEmpty { return "Add your shortlist to track deadlines and documents" }
+            var parts = ["\(applications.count) programs"]
+            if admits > 0 { parts.append("\(admits) admit\(admits == 1 ? "" : "s")") }
+            if let next { parts.append("next: \(next.university), \(next.deadline.formatted(.dateTime.day().month(.abbreviated)))") }
+            return parts.joined(separator: " · ")
+        }()
+
+        return HStack(spacing: 14) {
+            Image(systemName: "building.columns.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.accentBlue)
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(Color.accentBlue.opacity(0.15)))
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Universities")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.textPrimary)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textSecondary)
+                    .lineLimit(2)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.textTertiary)
+        }
+        .glassCard(padding: 14)
     }
 
     // MARK: - Savings
