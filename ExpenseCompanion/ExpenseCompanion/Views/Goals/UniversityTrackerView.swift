@@ -60,6 +60,9 @@ struct UniversityTrackerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.appBackground, for: .navigationBar)
+        .onDisappear {
+            Task { await DeadlineReminderScheduler.reschedule(context: modelContext) }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showingAdd = true } label: { Image(systemName: "plus") }

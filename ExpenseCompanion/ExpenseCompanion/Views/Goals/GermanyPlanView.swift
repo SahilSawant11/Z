@@ -35,6 +35,9 @@ struct GermanyPlanView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.appBackground, for: .navigationBar)
+        .onDisappear {
+            Task { await DeadlineReminderScheduler.reschedule(context: modelContext) }
+        }
         .onAppear(perform: seedIfNeeded)
         .sheet(item: $editing) { m in
             if let plan = plans.first { MilestoneEditorView(milestone: m, plan: plan) }

@@ -46,6 +46,7 @@ struct ExpenseCompanionApp: App {
     // Shared singletons injected as environment objects.
     @StateObject private var locationManager = LocationManager.shared
     @StateObject private var appearanceTimeProvider = TimeOfDayProvider()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -55,5 +56,11 @@ struct ExpenseCompanionApp: App {
                 
         }
         .modelContainer(modelContainer)
+        .onChange(of: scenePhase) { _, phase in
+            // Refresh deadline reminders when the app opens and when the user leaves it,
+            // so edits made in between are always reflected.
+            guard phase == .active || phase == .background else { return }
+            Task { await DeadlineReminderScheduler.reschedule(context: modelContainer.mainContext) }
+        }
     }
 }

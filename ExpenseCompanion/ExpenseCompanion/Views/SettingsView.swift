@@ -19,6 +19,7 @@ struct SettingsView: View {
     @FocusState private var budgetFieldFocused: Bool
     @AppStorage("liveActivityEnabled") private var liveActivityEnabled = true
     @AppStorage("appTheme") private var appTheme: AppTheme = .dark
+    @AppStorage(DeadlineReminderScheduler.enabledKey) private var deadlineRemindersEnabled = true
 
     private let currencies = ["INR", "USD", "EUR", "GBP", "JPY", "AED", "SGD", "CAD", "AUD"]
 
@@ -213,7 +214,13 @@ struct SettingsView: View {
                         // ── NOTIFICATIONS ──────────────────────────────────
                         VStack(alignment: .leading, spacing: 14) {
                             GlassSectionHeader(title: "Notifications", systemImage: "bell.badge")
-                            infoNote("Daily budget reminders and upcoming payment alerts coming in the next update.")
+
+                            darkToggle(isOn: $deadlineRemindersEnabled, label: "Germany MS deadline reminders")
+                                .onChange(of: deadlineRemindersEnabled) { _, _ in
+                                    Task { await DeadlineReminderScheduler.reschedule(context: modelContext) }
+                                }
+
+                            infoNote("Reminders at 9 AM, 14, 7 and 1 days before each open application deadline, and 7 and 1 days before each unpaid cost in your plan.")
                         }
                         .glassCard()
 
