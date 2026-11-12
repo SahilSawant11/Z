@@ -26,29 +26,11 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color.accentBlue.opacity(0.18), Color.clear],
-                    center: .top, startRadius: 0, endRadius: 340
-                )
-                .ignoresSafeArea()
+                DynamicGradientBackground()
 
                 ScrollView {
                     VStack(spacing: 14) {
-                        // Header
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("SETTINGS")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .kerning(1.5)
-                                    .foregroundStyle(Color.textTertiary)
-                                Text("Preferences")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundStyle(Color.textPrimary)
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 4)
+                        ScreenHeader(caption: "Settings", light: "Your", bold: "preferences")
 
                         // ── APPEARANCE ─────────────────────────────────────
                         VStack(alignment: .leading, spacing: 14) {
@@ -66,19 +48,16 @@ struct SettingsView: View {
                                         VStack(spacing: 7) {
                                             Image(systemName: theme.icon)
                                                 .font(.system(size: 18, weight: .semibold))
-                                                .foregroundStyle(isSelected ? .white : Color.textSecondary)
+                                                .foregroundStyle(isSelected ? Color.appBackground : Color.textSecondary)
                                             Text(theme.rawValue)
                                                 .font(.system(size: 11, weight: .semibold))
-                                                .foregroundStyle(isSelected ? .white : Color.textSecondary)
+                                                .foregroundStyle(isSelected ? Color.appBackground : Color.textSecondary)
                                         }
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 13)
                                         .background(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .fill(isSelected
-                                                      ? AnyShapeStyle(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
-                                                      : AnyShapeStyle(Color.cardBorder))
-                                                .shadow(color: isSelected ? Color.heroPink.opacity(0.35) : .clear, radius: 8, x: 0, y: 3)
+                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                .fill(isSelected ? Color.textPrimary : Color.cardSurfaceRaised)
                                         )
                                     }
                                     .buttonStyle(.plain)
@@ -94,11 +73,12 @@ struct SettingsView: View {
 
                             HStack(alignment: .center, spacing: 8) {
                                 Text(CurrencyFormatter.symbol(for: selectedCurrency))
-                                    .font(.system(size: 26, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(Color.textTertiary)
+                                    .font(.system(size: 22, weight: .regular))
+                                    .foregroundStyle(Color.textSecondary)
                                 TextField("500", text: $dailyLimitText)
                                     .keyboardType(.decimalPad)
-                                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                                    .font(.system(size: 44, weight: .light))
+                                    .kerning(-1)
                                     .monospacedDigit()
                                     .foregroundStyle(Color.textPrimary)
                                     .focused($budgetFieldFocused)
@@ -119,24 +99,19 @@ struct SettingsView: View {
                                     budgetFieldFocused = false
                                     Haptics.success()
                                 } label: {
-                                    Text("SAVE")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .kerning(1.0)
-                                        .foregroundStyle(.white)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 8)
-                                        .background(
-                                            Capsule()
-                                                .fill(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
-                                                .shadow(color: Color.heroPink.opacity(0.4), radius: 6, x: 0, y: 3)
-                                        )
+                                    Text("Save")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color.onAccent)
+                                        .padding(.horizontal, 18)
+                                        .padding(.vertical, 10)
+                                        .background(Capsule().fill(Color.heroPink))
                                 }
                                 .buttonStyle(.plain)
                                 .disabled((Double(dailyLimitText) ?? 0) <= 0)
                                 .opacity((Double(dailyLimitText) ?? 0) <= 0 ? 0.4 : 1.0)
                             }
 
-                            Divider().background(Color.white.opacity(0.07))
+                            Divider().overlay(Color.cardBorder)
 
                             // Currency picker
                             HStack {
@@ -157,7 +132,7 @@ struct SettingsView: View {
                                 }
                             }
 
-                            Divider().background(Color.white.opacity(0.07))
+                            Divider().overlay(Color.cardBorder)
 
                             darkToggle(isOn: Binding(
                                 get: { budgetSettings?.rolloverEnabled ?? false },
@@ -175,7 +150,7 @@ struct SettingsView: View {
                                 set: { locationManager.isLocationTaggingEnabled = $0 }
                             ), label: "Tag expenses with location")
 
-                            Divider().background(Color.white.opacity(0.07))
+                            Divider().overlay(Color.cardBorder)
 
                             darkToggle(isOn: Binding(
                                 get: { geofenceManager.isMonitoringEnabled },
@@ -251,7 +226,7 @@ struct SettingsView: View {
                                 Text("CSV export will be available in the next update.")
                             }
 
-                            Divider().background(Color.white.opacity(0.07))
+                            Divider().overlay(Color.cardBorder)
 
                             infoNote("Your data syncs privately via iCloud. To delete all data, remove the app.")
                         }

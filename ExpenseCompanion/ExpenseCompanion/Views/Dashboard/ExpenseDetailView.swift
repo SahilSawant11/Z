@@ -17,34 +17,31 @@ struct ExpenseDetailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
-                RadialGradient(
-                    colors: [expense.category.color.opacity(0.2), Color.clear],
-                    center: .top,
-                    startRadius: 0,
-                    endRadius: 300
-                )
-                .ignoresSafeArea()
+                DynamicGradientBackground()
 
                 ScrollView {
                     VStack(spacing: 14) {
                         // Hero
-                        VStack(spacing: 14) {
-                            CategoryBadge(category: expense.category, size: 64)
-                                .shadow(color: expense.category.color.opacity(0.4), radius: 16, x: 0, y: 8)
-
-                            Text(CurrencyFormatter.format(expense.amount))
-                                .font(.system(size: 40, weight: .bold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundStyle(Color.textPrimary)
-
-                            Text(expense.category.rawValue.uppercased())
-                                .font(.system(size: 11, weight: .semibold))
-                                .kerning(1.5)
-                                .foregroundStyle(Color.textTertiary)
+                        HeroCard {
+                        VStack(alignment: .leading, spacing: 18) {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(expense.category.rawValue)
+                                        .font(.system(size: 15, weight: .medium))
+                                    Text(expense.date.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute()))
+                                        .font(.system(size: 12))
+                                        .opacity(0.6)
+                                }
+                                Spacer()
+                                Image(systemName: expense.category.symbolName)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 44, height: 44)
+                                    .background(Circle().fill(Color.onAccent.opacity(0.1)))
+                            }
+                            BigAmount(amount: expense.amount, size: 56,
+                                      showsDecimals: expense.amount.truncatingRemainder(dividingBy: 1) != 0)
                         }
-                        .frame(maxWidth: .infinity)
-                        .glassCard()
+                        }
 
                         if !expense.note.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {

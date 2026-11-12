@@ -81,14 +81,14 @@ struct LocationInsightsView: View {
                     Spacer()
 
                     Text(CurrencyFormatter.format(cluster.totalAmount, currencyCode: currencyCode))
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.system(size: 15, weight: .regular))
                         .monospacedDigit()
                         .foregroundStyle(Color.textPrimary)
                 }
                 .padding(.vertical, 8)
 
                 if idx < frequentPlaceClusters.count - 1 {
-                    Divider().background(Color.white.opacity(0.07))
+                    Divider().overlay(Color.cardBorder)
                 }
             }
         }
