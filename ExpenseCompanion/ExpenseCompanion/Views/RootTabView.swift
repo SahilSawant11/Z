@@ -83,12 +83,8 @@ struct RootTabView: View {
             ZStack(alignment: .leading) {
                 // Adaptive frosted pill background
                 Capsule()
-                    .fill(isDark
-                          ? Color(red: 0.10, green: 0.10, blue: 0.13).opacity(0.92)
-                          : Color.white.opacity(0.88))
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.cardBorder, lineWidth: 1))
-                    .shadow(color: .black.opacity(isDark ? 0.55 : 0.12), radius: 22, x: 0, y: 8)
+                    .fill(Color.cardSurface)
+                    .shadow(color: .black.opacity(isDark ? 0.5 : 0.08), radius: 20, x: 0, y: 8)
 
                 // Liquid gradient blob
                 let leftCenter  = min(blobLeadX, blobLeadXImmediate)
@@ -97,13 +93,9 @@ struct RootTabView: View {
                 let blobWidth = (rightCenter - leftCenter) + blobH
 
                 RoundedRectangle(cornerRadius: blobH / 2, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [Color.heroPink, Color.heroPurple],
-                        startPoint: .leading, endPoint: .trailing
-                    ))
+                    .fill(Color.textPrimary)
                     .frame(width: max(blobWidth, blobH), height: blobH)
                     .offset(x: blobLeft)
-                    .shadow(color: Color.heroPink.opacity(0.55), radius: 14, x: 0, y: 4)
                     .animation(.spring(response: 0.45, dampingFraction: 0.62), value: blobLeadX)
 
                 // Tab icons
@@ -115,7 +107,7 @@ struct RootTabView: View {
                         } label: {
                             Image(systemName: tab.symbol)
                                 .font(.system(size: 19, weight: isSelected ? .bold : .regular))
-                                .foregroundStyle(isSelected ? .white : Color.textTertiary)
+                                .foregroundStyle(isSelected ? Color.appBackground : Color.textTertiary)
                                 .scaleEffect(isSelected ? 1.08 : 1.0)
                                 .frame(width: tabW, height: geo.size.height)
                                 .contentShape(Rectangle())

@@ -131,13 +131,11 @@ struct GermanyPlanView: View {
                     Text("WS \(plan.intakeDate.formatted(.dateTime.year())) · \(monthsToIntake) mo")
                         .font(.system(size: 11, weight: .semibold))
                         .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Capsule().fill(.white.opacity(0.18)))
+                        .background(Capsule().fill(Color.onAccent.opacity(0.1)))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(CurrencyFormatter.format(funded))
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .monospacedDigit()
+                    BigAmount(amount: funded, size: 44)
                     Text("funded of \(CurrencyFormatter.format(grandTotal)) pre-departure")
                         .font(.system(size: 12))
                         .opacity(0.8)
@@ -145,8 +143,8 @@ struct GermanyPlanView: View {
 
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(.white.opacity(0.2))
-                        Capsule().fill(.white)
+                        Capsule().fill(Color.onAccent.opacity(0.15))
+                        Capsule().fill(Color.onAccent)
                             .frame(width: geo.size.width * min(max(progress, 0), 1))
                     }
                 }
@@ -165,9 +163,8 @@ struct GermanyPlanView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.black.opacity(0.18)))
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.onAccent.opacity(0.1)))
             }
-            .foregroundStyle(.white)
         }
     }
 

@@ -2,8 +2,8 @@
 //  DashboardView.swift
 //  ExpenseCompanion
 //
-//  Dark fintech dashboard. Hero gradient card shows total spending,
-//  then budget/goal rings, then today's expense list.
+//  Home. One loud pink card answers "how much have I spent?"; everything
+//  else is flat charcoal and one tap away from detail.
 //
 
 import SwiftUI
@@ -20,40 +20,57 @@ struct DashboardView: View {
         case today = "Today"
         case week = "Week"
         case month = "Month"
+
+        var heroLabel: String {
+            switch self {
+            case .today: return "Spent today"
+            case .week: return "Spent this week"
+            case .month: return "Spent this month"
+            }
+        }
+
+        /// Days of history drawn in the hero sparkline.
+        var sparklineDays: Int {
+            switch self {
+            case .today: return 14
+            case .week: return 7
+            case .month: return 28
+            }
+        }
     }
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottomTrailing) {
                 DynamicGradientBackground()
 
                 ScrollView {
                     if let viewModel {
-                        VStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            header
+                            periodPicker
                             heroCard(viewModel: viewModel)
+                            budgetCard(viewModel: viewModel)
+                            HStack(alignment: .top, spacing: 14) {
+                                averageCard(viewModel: viewModel)
+                                goalCard(viewModel: viewModel)
+                            }
+                            .fixedSize(horizontal: false, vertical: true)
                             heatmapCard(viewModel: viewModel)
-                            metricsRow(viewModel: viewModel)
                             todayExpensesSection(viewModel: viewModel)
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 100)
+                        .padding(.top, 8)
+                        .padding(.bottom, 110)
                     } else {
                         ProgressView()
-                            .tint(.white)
                             .padding(.top, 120)
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .scrollContentBackground(.hidden)
 
-                // FAB
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        addExpenseButton
-                    }
-                }
+                addExpenseButton
             }
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
@@ -72,86 +89,85 @@ struct DashboardView: View {
                 GoalsListView()
             }
         }
-        
     }
 
-    // MARK: - Hero Card
+    // MARK: - Header
+
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.textSecondary)
+                SplitTitle(light: greeting.first, bold: greeting.second)
+            }
+            Spacer()
+            CircleIconButton(systemName: "target") { showingGoals = true }
+        }
+        .padding(.top, 8)
+    }
+
+    private var greeting: (first: String, second: String) {
+        switch Calendar.current.component(.hour, from: .now) {
+        case 5..<12: return ("Good", "morning")
+        case 12..<17: return ("Good", "afternoon")
+        case 17..<21: return ("Good", "evening")
+        default: return ("Good", "night")
+        }
+    }
+
+    private var periodPicker: some View {
+        HStack(spacing: 8) {
+            ForEach(Period.allCases, id: \.self) { p in
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { selectedPeriod = p }
+                    Haptics.light()
+                } label: {
+                    PillBadge(title: p.rawValue, isSelected: selectedPeriod == p)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Hero
 
     private func heroCard(viewModel: DashboardViewModel) -> some View {
-        HeroCard {
-            VStack(alignment: .leading, spacing: 0) {
-                // Header row
-                HStack {
+        let code = viewModel.budgetSettings?.currencyCode ?? "INR"
+        let hasBudget = (viewModel.budgetSettings?.dailyLimit ?? 0) > 0
+
+        return HeroCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(greetingText.uppercased())
-                            .font(.system(size: 10, weight: .semibold))
-                            .kerning(1.2)
-                            .foregroundStyle(.white.opacity(0.55))
-                        Text("Total Spent")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
+                        Text(selectedPeriod.heroLabel)
+                            .font(.system(size: 15, weight: .medium))
+                        Text("\(transactionCount(viewModel)) transactions")
+                            .font(.system(size: 12))
+                            .opacity(0.6)
                     }
                     Spacer()
-
-                    // Period toggle pills
-                    HStack(spacing: 4) {
-                        ForEach(Period.allCases, id: \.self) { p in
-                            PillBadge(title: p.rawValue, isSelected: selectedPeriod == p)
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                        selectedPeriod = p
-                                    }
-                                    Haptics.light()
-                                }
-                        }
+                    if selectedPeriod == .today, hasBudget {
+                        CornerRing(progress: viewModel.budgetUsedFraction, tint: .onAccent)
                     }
                 }
 
-                Spacer().frame(height: 20)
+                AreaSparkline(values: dailySeries(viewModel), lineWidth: 2, fillOpacity: 0.14)
+                    .frame(height: 64)
 
-                // Giant amount
-                let amount = periodAmount(viewModel: viewModel)
-                let parts = formatAmountParts(amount, currencyCode: viewModel.budgetSettings?.currencyCode ?? "INR")
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text(parts.symbol)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.8))
-                    Text(parts.whole)
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
-                    Text(parts.decimal)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.white.opacity(0.55))
-                }
-
-                Spacer().frame(height: 6)
-
-                HStack(spacing: 16) {
-                    Label("\(viewModel.todayExpenses.count) transactions today", systemImage: "arrow.up.right")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                HStack(alignment: .lastTextBaseline) {
+                    BigAmount(amount: periodAmount(viewModel), currencyCode: code, size: 56)
                     Spacer()
+                    Text("last \(selectedPeriod.sparklineDays)d")
+                        .font(.system(size: 11, weight: .medium))
+                        .opacity(0.55)
                 }
             }
         }
-        .frame(height: 190)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: selectedPeriod)
     }
 
-    // MARK: - Period helpers
-
-    private var greetingText: String {
-        let h = Calendar.current.component(.hour, from: Date())
-        switch h {
-        case 5..<12: return "Good morning"
-        case 12..<17: return "Good afternoon"
-        case 17..<21: return "Good evening"
-        default: return "Good night"
-        }
-    }
-
-    private func periodAmount(viewModel: DashboardViewModel) -> Double {
+    private func periodAmount(_ viewModel: DashboardViewModel) -> Double {
         switch selectedPeriod {
         case .today: return viewModel.todayTotal
         case .week: return viewModel.weekTotal
@@ -159,28 +175,164 @@ struct DashboardView: View {
         }
     }
 
-    private struct AmountParts {
-        let symbol: String
-        let whole: String
-        let decimal: String
+    private func transactionCount(_ viewModel: DashboardViewModel) -> Int {
+        let cal = Calendar.current
+        let now = Date.now
+        let start: Date
+        switch selectedPeriod {
+        case .today: return viewModel.todayExpenses.count
+        case .week: start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        case .month: start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+        }
+        return viewModel.recentExpenses.filter { $0.date >= start }.count
     }
 
-    private func formatAmountParts(_ amount: Double, currencyCode: String) -> AmountParts {
-        let symbol = CurrencyFormatter.symbol(for: currencyCode)
-        let whole = String(Int(amount))
-        let frac = Int((amount - Double(Int(amount))) * 100)
-        return AmountParts(symbol: symbol, whole: whole, decimal: String(format: ".%02d", frac))
+    /// Daily totals, oldest first, for the selected period's sparkline window.
+    private func dailySeries(_ viewModel: DashboardViewModel) -> [Double] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        var totals: [Date: Double] = [:]
+        for e in viewModel.recentExpenses {
+            totals[cal.startOfDay(for: e.date), default: 0] += e.amount
+        }
+        return (0..<selectedPeriod.sparklineDays).reversed().map { offset in
+            let day = cal.date(byAdding: .day, value: -offset, to: today) ?? today
+            return totals[day] ?? 0
+        }
     }
 
-    // MARK: - Heatmap Card
+    // MARK: - Budget
+
+    private func budgetCard(viewModel: DashboardViewModel) -> some View {
+        let code = viewModel.budgetSettings?.currencyCode ?? "INR"
+        let limit = viewModel.budgetSettings?.dailyLimit ?? 0
+        let over = viewModel.todayTotal > limit && limit > 0
+        let marker: Color = over ? .red : viewModel.isApproachingBudgetLimit ? .orange : .heroPink
+
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Daily budget")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textSecondary)
+                    HStack(alignment: .lastTextBaseline, spacing: 6) {
+                        BigAmount(amount: over ? viewModel.todayTotal - limit : viewModel.remainingBudgetToday,
+                                  currencyCode: code, size: 34)
+                            .foregroundStyle(over ? Color.red : Color.textPrimary)
+                        Text(over ? "over" : "left")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
+                Spacer()
+                Text("\(Int((viewModel.budgetUsedFraction * 100).rounded()))%")
+                    .font(.system(size: 13, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(marker)
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Capsule().fill(marker.opacity(0.14)))
+            }
+
+            TickGauge(progress: viewModel.budgetUsedFraction, marker: marker)
+
+            HStack {
+                Text("\(CurrencyFormatter.format(viewModel.todayTotal, currencyCode: code)) spent")
+                Spacer()
+                Text("of \(CurrencyFormatter.format(limit, currencyCode: code))")
+            }
+            .font(.system(size: 12))
+            .monospacedDigit()
+            .foregroundStyle(Color.textTertiary)
+        }
+        .glassCard()
+    }
+
+    // MARK: - Average
+
+    private func averageCard(viewModel: DashboardViewModel) -> some View {
+        let code = viewModel.budgetSettings?.currencyCode ?? "INR"
+        let text = BigAmount.grouped(viewModel.dailyAverageThisMonth.rounded(), currencyCode: code)
+
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("Daily average")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.textSecondary)
+            Spacer(minLength: 0)
+            ViewThatFits(in: .horizontal) {
+                DotMatrixText(text: text, dot: 4, gap: 2)
+                DotMatrixText(text: text, dot: 3, gap: 1.5)
+                DotMatrixText(text: text, dot: 2, gap: 1)
+            }
+            Text("\(CurrencyFormatter.symbol(for: code)) / day this month")
+                .font(.system(size: 11))
+                .foregroundStyle(Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .glassCard()
+    }
+
+    // MARK: - Goal
+
+    private func goalCard(viewModel: DashboardViewModel) -> some View {
+        Group {
+            if let goal = viewModel.primaryGoal {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top) {
+                        Text("Goal")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.textSecondary)
+                        Spacer()
+                        CornerRing(progress: goal.progress, tint: .heroPink, size: 40)
+                    }
+                    Spacer(minLength: 0)
+                    Text(goal.title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+                    BigAmount(amount: goal.savedAmount, size: 24, weight: .light)
+                        .foregroundStyle(Color.textPrimary)
+                    Text("of \(CurrencyFormatter.format(goal.targetAmount))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.textTertiary)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Goal")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textSecondary)
+                    Spacer(minLength: 0)
+                    Text("No goal yet")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                    Button {
+                        showingGoals = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("Set one")
+                            Image(systemName: "arrow.up.right")
+                        }
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.heroPink)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .glassCard()
+    }
+
+    // MARK: - Heatmap
 
     private func heatmapCard(viewModel: DashboardViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                GlassSectionHeader(title: "28-Day Activity", systemImage: "calendar.badge.clock")
+                Text("Activity")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.textSecondary)
                 Spacer()
-                Text(viewModel.recentExpenses.count == 0 ? "No data yet" : "\(viewModel.recentExpenses.count) transactions")
-                    .font(.system(size: 11, weight: .medium))
+                Text(viewModel.recentExpenses.isEmpty ? "No data yet" : "\(viewModel.recentExpenses.count) in 28 days")
+                    .font(.system(size: 12))
                     .foregroundStyle(Color.textTertiary)
             }
             SpendingHeatmapView(expenses: viewModel.recentExpenses, compact: true)
@@ -188,122 +340,40 @@ struct DashboardView: View {
         .glassCard()
     }
 
-    // MARK: - Metrics Row
-
-    private func metricsRow(viewModel: DashboardViewModel) -> some View {
-        HStack(spacing: 12) {
-            // Budget ring card
-            budgetCard(viewModel: viewModel)
-            // Goal card
-            goalCard(viewModel: viewModel)
-        }
-    }
-
-    private func budgetCard(viewModel: DashboardViewModel) -> some View {
-        VStack(spacing: 10) {
-            ZStack {
-                ProgressRing(
-                    progress: viewModel.budgetUsedFraction,
-                    lineWidth: 8,
-                    tint: viewModel.isApproachingBudgetLimit ? .orange : Color(red: 0.2, green: 0.9, blue: 0.7)
-                )
-                .frame(width: 76, height: 76)
-
-                VStack(spacing: 1) {
-                    Text("\(Int(viewModel.budgetUsedFraction * 100))%")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.textTertiary)
-                    Text("used")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.textTertiary)
-                }
-            }
-
-            VStack(spacing: 2) {
-                Text("BUDGET")
-                    .font(.system(size: 9, weight: .semibold))
-                    .kerning(1.0)
-                    .foregroundStyle(Color.textTertiary)
-                Text(CurrencyFormatter.format(viewModel.budgetSettings?.dailyLimit ?? 0,
-                                              currencyCode: viewModel.budgetSettings?.currencyCode ?? "INR"))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.textSecondary)
-                    .monospacedDigit()
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .glassCard()
-    }
-
-    private func goalCard(viewModel: DashboardViewModel) -> some View {
-        Group {
-            if let goal = viewModel.primaryGoal {
-                VStack(spacing: 10) {
-                    ZStack {
-                        ProgressRing(progress: goal.progress, lineWidth: 8, tint: Color.heroPink)
-                            .frame(width: 76, height: 76)
-                        Image(systemName: goal.category.symbolName)
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.heroPink)
-                    }
-                    VStack(spacing: 2) {
-                        Text("GOAL")
-                            .font(.system(size: 9, weight: .semibold))
-                            .kerning(1.0)
-                            .foregroundStyle(Color.textTertiary)
-                        Text(goal.title)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.textSecondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .glassCard()
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "target")
-                        .font(.system(size: 26, weight: .ultraLight))
-                        .foregroundStyle(Color.textTertiary)
-                    Text("No goal yet")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.textTertiary)
-                    Button("Set one") {
-                        showingGoals = true
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.heroPink)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 140)
-                .glassCard()
-            }
-        }
-    }
-
-    // MARK: - Expense List
+    // MARK: - Today's expenses
 
     private func todayExpensesSection(viewModel: DashboardViewModel) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            GlassSectionHeader(title: "Today's Expenses", systemImage: "clock")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Today")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.textSecondary)
+                Spacer()
+                if !viewModel.todayExpenses.isEmpty {
+                    Text("\(viewModel.todayExpenses.count)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.textSecondary)
+                        .frame(minWidth: 24, minHeight: 24)
+                        .background(Circle().fill(Color.cardSurfaceRaised))
+                }
+            }
 
             if viewModel.todayExpenses.isEmpty {
                 HStack(spacing: 12) {
-                    Image(systemName: "plus.circle.dashed")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Color.textTertiary)
-                    Text("Nothing logged yet — tap + to add.")
-                        .font(.subheadline)
+                    CircleIconButton(systemName: "plus", size: 40) { showingAddExpense = true }
+                    Text("Nothing logged yet today.")
+                        .font(.system(size: 14))
                         .foregroundStyle(Color.textSecondary)
                 }
-                .padding(.vertical, 16)
+                .padding(.vertical, 6)
             } else {
                 List {
                     ForEach(viewModel.todayExpenses) { expense in
                         ExpenseRowView(expense: expense)
                             .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.white.opacity(0.07))
-                            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                            .listRowSeparatorTint(Color.cardBorder)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
                                     withAnimation { viewModel.deleteExpense(expense) }
@@ -321,7 +391,7 @@ struct DashboardView: View {
         .glassCard()
     }
 
-    // MARK: - FAB
+    // MARK: - Add button
 
     private var addExpenseButton: some View {
         Button {
@@ -329,21 +399,13 @@ struct DashboardView: View {
             Haptics.light()
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.heroPink, .heroPurple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: Color.heroPink.opacity(0.5), radius: 14, x: 0, y: 6)
-                )
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Color.onAccent)
+                .frame(width: 60, height: 60)
+                .background(Circle().fill(Color.heroPink))
+                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
         }
+        .accessibilityLabel("Add expense")
         .padding(.trailing, 20)
         .padding(.bottom, 100)
     }
