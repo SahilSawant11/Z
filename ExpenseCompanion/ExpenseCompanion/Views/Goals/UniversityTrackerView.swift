@@ -27,9 +27,6 @@ struct UniversityTrackerView: View {
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
-            RadialGradient(colors: [Color.heroPurple.opacity(0.22), .clear],
-                           center: .top, startRadius: 0, endRadius: 340)
-                .ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 14) {
@@ -131,7 +128,8 @@ struct UniversityTrackerView: View {
     private func summaryStat(_ value: String, _ label: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 34, weight: .light))
+                .monospacedDigit()
                 .foregroundStyle(Color.textPrimary)
             Text(label).font(.system(size: 11)).foregroundStyle(Color.textSecondary)
         }

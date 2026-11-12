@@ -21,9 +21,6 @@ struct GermanyPlanView: View {
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
-            RadialGradient(colors: [Color.heroPurple.opacity(0.22), .clear],
-                           center: .top, startRadius: 0, endRadius: 340)
-                .ignoresSafeArea()
 
             if let plan = plans.first {
                 content(plan: plan)
@@ -128,10 +125,12 @@ struct GermanyPlanView: View {
                     Text("🇩🇪  \(plan.title)")
                         .font(.system(size: 13, weight: .semibold))
                     Spacer()
-                    Text("WS \(plan.intakeDate.formatted(.dateTime.year())) · \(monthsToIntake) mo")
-                        .font(.system(size: 11, weight: .semibold))
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Capsule().fill(Color.onAccent.opacity(0.1)))
+                    VStack(alignment: .trailing, spacing: 5) {
+                        DotMatrixText(text: "\(monthsToIntake)", dot: 4, gap: 2, color: .onAccent)
+                        Text("months to WS \(plan.intakeDate.formatted(.dateTime.year()))")
+                            .font(.system(size: 10, weight: .medium))
+                            .opacity(0.6)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -242,9 +241,7 @@ struct GermanyPlanView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Needed")
                         .font(.system(size: 11)).foregroundStyle(Color.textTertiary)
-                    Text(CurrencyFormatter.format(plan.loanNeedINR.rounded()))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .monospacedDigit()
+                    BigAmount(amount: plan.loanNeedINR.rounded(), size: 34)
                         .foregroundStyle(Color.textPrimary)
                     Text(CurrencyFormatter.format(plan.loanNeedEUR.rounded(), currencyCode: "EUR") + " at ₹\(plan.eurToInr.formatted())/€")
                         .font(.system(size: 11)).foregroundStyle(Color.textSecondary)
@@ -271,13 +268,7 @@ struct GermanyPlanView: View {
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(shareColor)
                 }
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.cardBorder)
-                        Capsule().fill(shareColor).frame(width: geo.size.width * min(share, 1))
-                    }
-                }
-                .frame(height: 6)
+                TickGauge(progress: share, marker: shareColor, height: 28)
             }
 
             DisclosureGroup(isExpanded: $showingLoanInputs) {

@@ -14,31 +14,14 @@ struct GoalsListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color.heroPurple.opacity(0.22), Color.clear],
-                    center: .top,
-                    startRadius: 0,
-                    endRadius: 340
-                )
-                .ignoresSafeArea()
+                DynamicGradientBackground()
 
                 ScrollView {
-                    VStack(spacing: 14) {
-                        // Header
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("GOALS")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .kerning(1.5)
-                                    .foregroundStyle(Color.textTertiary)
-                                Text("Savings")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundStyle(Color.textPrimary)
-                            }
-                            Spacer()
+                    VStack(alignment: .leading, spacing: 14) {
+                        ScreenHeader(caption: "Savings", light: "Your", bold: "goals") {
+                            CircleIconButton(systemName: "plus", filled: true) { showingAddGoal = true }
+                                .accessibilityLabel("Add goal")
                         }
-                        .padding(.top, 4)
 
                         NavigationLink {
                             GermanyPlanView()
@@ -48,54 +31,37 @@ struct GoalsListView: View {
                         .buttonStyle(.plain)
 
                         if goals.isEmpty {
-                            VStack(spacing: 14) {
-                                Image(systemName: "target")
-                                    .font(.system(size: 52, weight: .ultraLight))
-                                    .foregroundStyle(Color.textTertiary)
-                                Text("No goals yet")
-                                    .font(.headline)
-                                    .foregroundStyle(Color.textPrimary)
-                                Text("Set a savings goal to track your progress.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.textSecondary)
-                                    .multilineTextAlignment(.center)
+                            HStack(spacing: 12) {
+                                CircleIconButton(systemName: "plus", size: 40) { showingAddGoal = true }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("No other goals yet")
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundStyle(Color.textPrimary)
+                                    Text("Set one to track your progress.")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Color.textSecondary)
+                                }
                             }
-                            .padding(.top, 60)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .glassCard()
                         } else {
                             ForEach(goals) { goal in
                                 GoalRowView(goal: goal)
                             }
                         }
                     }
-                    .padding(16)
-                    .padding(.bottom, 100)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 110)
                 }
             }
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
-            .overlay(alignment: .bottomTrailing) {
-                Button {
-                    showingAddGoal = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 56, height: 56)
-                        .background(
-                            Circle()
-                                .fill(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .shadow(color: Color.heroPink.opacity(0.45), radius: 14, x: 0, y: 6)
-                        )
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 100)
-            }
             .onAppear(perform: loadGoals)
             .sheet(isPresented: $showingAddGoal, onDismiss: loadGoals) {
                 AddGoalView()
             }
         }
-        
     }
 
     private func loadGoals() {
@@ -108,36 +74,33 @@ struct GoalRowView: View {
     let goal: FinancialGoal
 
     var body: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                ProgressRing(progress: goal.progress, lineWidth: 7, tint: Color.heroPink)
-                    .frame(width: 54, height: 54)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
                 Image(systemName: goal.category.symbolName)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.heroPink)
-            }
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(goal.title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
-                Text("\(CurrencyFormatter.format(goal.savedAmount)) of \(CurrencyFormatter.format(goal.targetAmount))")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.textSecondary)
-                Text("Save \(CurrencyFormatter.format(goal.suggestedDailySaving))/day")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.textTertiary)
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(Color.cardSurfaceRaised))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(goal.title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+                    Text("\(goal.daysRemaining) days left · save \(CurrencyFormatter.format(goal.suggestedDailySaving.rounded()))/day")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.textSecondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                CornerRing(progress: goal.progress, tint: .heroPink, size: 42)
             }
 
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 3) {
-                Text("\(Int(goal.progress * 100))%")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.heroPink)
-                Text("done")
-                    .font(.system(size: 10))
+            HStack(alignment: .lastTextBaseline) {
+                BigAmount(amount: goal.savedAmount, size: 32)
+                    .foregroundStyle(Color.textPrimary)
+                Spacer()
+                Text("of \(CurrencyFormatter.format(goal.targetAmount))")
+                    .font(.system(size: 12))
                     .foregroundStyle(Color.textTertiary)
             }
         }
@@ -145,26 +108,59 @@ struct GoalRowView: View {
     }
 }
 
+/// Pink hero card for the Germany MS plan, with its live funding status.
 struct GermanyPlanEntryCard: View {
+    @Query private var plans: [StudyAbroadPlan]
+    @Query private var milestones: [PlanMilestone]
+
     var body: some View {
-        HStack(spacing: 14) {
-            Text("🇩🇪")
-                .font(.system(size: 26))
-                .frame(width: 54, height: 54)
-                .background(Circle().fill(Color.heroPurple.opacity(0.15)))
-            VStack(alignment: .leading, spacing: 4) {
-                Text("MS in Germany")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.textPrimary)
-                Text("Cost timeline, savings projection and loan EMI")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.textSecondary)
+        let unpaid = milestones.filter { !$0.isPaid }.reduce(0) { $0 + $1.amount }
+        let paid = milestones.filter(\.isPaid).reduce(0) { $0 + $1.amount }
+        let savings = plans.first?.currentSavings ?? 0
+        let funded = paid + max(min(savings, unpaid), 0)
+        let total = paid + unpaid
+        let months = plans.first.map { Int(PlanProjector.months(from: .now, to: $0.intakeDate)) }
+
+        HeroCard {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("🇩🇪  MS in Germany")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(total > 0 ? "Pre-departure funded" : "Plan costs, universities and loan")
+                            .font(.system(size: 12))
+                            .opacity(0.6)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(Color.onAccent.opacity(0.1)))
+                }
+
+                HStack(alignment: .bottom) {
+                    if total > 0 {
+                        VStack(alignment: .leading, spacing: 2) {
+                            BigAmount(amount: funded, size: 44)
+                            Text("of \(CurrencyFormatter.format(total))")
+                                .font(.system(size: 12))
+                                .opacity(0.6)
+                        }
+                    } else {
+                        Text("Open the plan")
+                            .font(.system(size: 28, weight: .light))
+                    }
+                    Spacer()
+                    if let months {
+                        VStack(alignment: .trailing, spacing: 6) {
+                            DotMatrixText(text: "\(months)", dot: 4, gap: 2, color: .onAccent)
+                            Text("months to go")
+                                .font(.system(size: 11))
+                                .opacity(0.6)
+                        }
+                    }
+                }
             }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.textTertiary)
         }
-        .glassCard()
     }
 }

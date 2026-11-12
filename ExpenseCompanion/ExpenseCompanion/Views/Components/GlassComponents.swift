@@ -199,6 +199,56 @@ struct SplitTitle: View {
     }
 }
 
+// MARK: - Screen Header
+
+/// Top-of-screen header: small caption, split title, optional trailing control.
+struct ScreenHeader<Trailing: View>: View {
+    let caption: String
+    let light: String
+    let bold: String
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(caption)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.textSecondary)
+                SplitTitle(light: light, bold: bold)
+            }
+            Spacer()
+            trailing
+        }
+        .padding(.top, 8)
+    }
+}
+
+extension ScreenHeader where Trailing == EmptyView {
+    init(caption: String, light: String, bold: String) {
+        self.init(caption: caption, light: light, bold: bold) { EmptyView() }
+    }
+}
+
+// MARK: - Accent Button
+
+/// Full-width primary action: solid pink, dark label.
+struct AccentButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 16, weight: .semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .foregroundStyle(isEnabled ? Color.onAccent : Color.textTertiary)
+            .background(
+                Capsule().fill(isEnabled ? Color.heroPink : Color.cardSurfaceRaised)
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Circle Icon Button
 
 struct CircleIconButton: View {
@@ -433,7 +483,7 @@ enum DotMatrixFont {
     }
 
     private static let table: [Character: [String]] = [
-        "0": [" ### ", "#   #", "#  ##", "# # #", "##  #", "#   #", " ### "],
+        "0": [" ### ", "#   #", "#   #", "#   #", "#   #", "#   #", " ### "],
         "1": ["  #  ", " ##  ", "  #  ", "  #  ", "  #  ", "  #  ", " ### "],
         "2": [" ### ", "#   #", "    #", "   # ", "  #  ", " #   ", "#####"],
         "3": ["#####", "   # ", "  #  ", "   # ", "    #", "#   #", " ### "],
