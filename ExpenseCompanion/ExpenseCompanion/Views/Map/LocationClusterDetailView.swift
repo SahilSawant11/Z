@@ -2,7 +2,7 @@
 //  LocationClusterDetailView.swift
 //  ExpenseCompanion
 //
-//  Dark fintech cluster detail sheet. Shows per-location stats, a mini map,
+//  Place detail sheet. Shows per-location stats, a mini map,
 //  expense list, and lets the user save it as a labeled frequent place.
 //
 
@@ -30,16 +30,7 @@ struct LocationClusterDetailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
-
-                // Per-cluster color radial glow
-                RadialGradient(
-                    colors: [cluster.dominantCategory.color.opacity(0.22), Color.clear],
-                    center: .top,
-                    startRadius: 0,
-                    endRadius: 300
-                )
-                .ignoresSafeArea()
+                DynamicGradientBackground()
 
                 ScrollView {
                     VStack(spacing: 14) {
@@ -74,40 +65,33 @@ struct LocationClusterDetailView: View {
     // MARK: - Summary Card
 
     private var summaryCard: some View {
-        HStack(spacing: 0) {
-            statCell(value: "\(cluster.visitCount)", label: "Visits")
-            Divider().frame(width: 1).background(Color.white.opacity(0.08)).padding(.vertical, 8)
-            statCell(value: CurrencyFormatter.format(cluster.totalAmount), label: "Total Spent")
-            Divider().frame(width: 1).background(Color.white.opacity(0.08)).padding(.vertical, 8)
-            // Dominant category
-            VStack(spacing: 6) {
-                CategoryBadge(category: cluster.dominantCategory, size: 36)
-                Text("MOSTLY")
-                    .font(.system(size: 9, weight: .semibold))
-                    .kerning(1.0)
-                    .foregroundStyle(Color.textTertiary)
-                Text(cluster.dominantCategory.rawValue)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.textSecondary)
+        HeroCard {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Spent here")
+                            .font(.system(size: 15, weight: .medium))
+                        Text("\(cluster.visitCount) visit\(cluster.visitCount == 1 ? "" : "s") · mostly \(cluster.dominantCategory.rawValue.lowercased())")
+                            .font(.system(size: 12))
+                            .opacity(0.6)
+                    }
+                    Spacer()
+                    Image(systemName: cluster.dominantCategory.symbolName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(Color.onAccent.opacity(0.1)))
+                }
+                HStack(alignment: .lastTextBaseline) {
+                    BigAmount(amount: cluster.totalAmount, size: 52)
+                    Spacer()
+                    if cluster.visitCount > 1 {
+                        Text("\(CurrencyFormatter.format((cluster.totalAmount / Double(cluster.visitCount)).rounded())) / visit")
+                            .font(.system(size: 12, weight: .medium))
+                            .opacity(0.6)
+                    }
+                }
             }
-            .frame(maxWidth: .infinity)
         }
-        .glassCard()
-    }
-
-    private func statCell(value: String, label: String) -> some View {
-        VStack(spacing: 5) {
-            Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(Color.textPrimary)
-                .minimumScaleFactor(0.7)
-            Text(label.uppercased())
-                .font(.system(size: 9, weight: .semibold))
-                .kerning(1.0)
-                .foregroundStyle(Color.textTertiary)
-        }
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Mini Map
@@ -117,25 +101,23 @@ struct LocationClusterDetailView: View {
             Marker(cluster.displayName, coordinate: cluster.coordinate)
                 .tint(cluster.dominantCategory.color)
         }
-        .frame(height: 170)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
-        )
+        .frame(height: 180)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     // MARK: - Expense List
 
     private var expenseList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            GlassSectionHeader(title: "Expenses Here", systemImage: "list.bullet")
+            Text("Expenses here")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.textSecondary)
                 .padding(.bottom, 8)
             let sorted = cluster.expenses.sorted(by: { $0.date > $1.date })
             ForEach(Array(sorted.enumerated()), id: \.element.id) { idx, expense in
                 ExpenseRowView(expense: expense)
                 if idx < sorted.count - 1 {
-                    Divider().background(Color.white.opacity(0.07))
+                    Divider().overlay(Color.cardBorder).padding(.vertical, 6)
                 }
             }
         }
@@ -148,20 +130,17 @@ struct LocationClusterDetailView: View {
         Group {
             if let existingPlace {
                 HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.green.opacity(0.15))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 16))
-                            .foregroundStyle(Color.green)
-                    }
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.green)
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(Color.cardSurfaceRaised))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Saved as Place")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.textTertiary)
+                        Text("Saved as place")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.textSecondary)
                         Text(existingPlace.label)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.textPrimary)
                     }
                     Spacer()
@@ -174,17 +153,9 @@ struct LocationClusterDetailView: View {
                 Button {
                     showingLabelSheet = true
                 } label: {
-                    Label("Save as Frequent Place", systemImage: "star.fill")
-                        .font(.system(size: 15, weight: .bold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
-                                .shadow(color: Color.heroPink.opacity(0.4), radius: 10, x: 0, y: 4)
-                        )
-                        .foregroundStyle(.white)
+                    Label("Save as frequent place", systemImage: "star.fill")
                 }
+                .buttonStyle(AccentButtonStyle())
             }
         }
     }
@@ -211,20 +182,14 @@ private struct LabelPlaceView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color.heroPurple.opacity(0.20), Color.clear],
-                    center: .top, startRadius: 0, endRadius: 280
-                )
-                .ignoresSafeArea()
+                DynamicGradientBackground()
 
                 VStack(spacing: 14) {
                     // Preset label chips
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("LABEL")
-                            .font(.system(size: 10, weight: .semibold))
-                            .kerning(1.2)
-                            .foregroundStyle(Color.textTertiary)
+                        Text("Label")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.textSecondary)
                         // Presets
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 8) {
                             ForEach(presetLabels, id: \.self) { label in
@@ -235,16 +200,11 @@ private struct LabelPlaceView: View {
                                 } label: {
                                     Text(label)
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundStyle(isSelected ? .white : Color.textSecondary)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 8)
+                                        .foregroundStyle(isSelected ? Color.appBackground : Color.textSecondary)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 9)
                                         .frame(maxWidth: .infinity)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .fill(isSelected
-                                                      ? AnyShapeStyle(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing))
-                                                      : AnyShapeStyle(Color.white.opacity(0.07)))
-                                        )
+                                        .background(Capsule().fill(isSelected ? Color.textPrimary : Color.cardSurfaceRaised))
                                 }
                                 .buttonStyle(.plain)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
@@ -260,13 +220,12 @@ private struct LabelPlaceView: View {
 
                     // Spending limit
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("MONTHLY LIMIT (OPTIONAL)")
-                            .font(.system(size: 10, weight: .semibold))
-                            .kerning(1.2)
-                            .foregroundStyle(Color.textTertiary)
+                        Text("Monthly limit (optional)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.textSecondary)
                         TextField("e.g. 2000", text: $spendingLimitText)
                             .keyboardType(.decimalPad)
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .font(.system(size: 32, weight: .light))
                             .monospacedDigit()
                             .foregroundStyle(Color.textPrimary)
                         Text("Enables a location alert when you're near this spot and have exceeded this limit.")
@@ -277,28 +236,15 @@ private struct LabelPlaceView: View {
                     .glassCard()
 
                     // Save button
-                    Button { save() } label: {
-                        Text("Save Place")
-                            .font(.system(size: 16, weight: .bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 17)
-                            .background(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(customLabel.isEmpty
-                                          ? AnyShapeStyle(Color.white.opacity(0.08))
-                                          : AnyShapeStyle(LinearGradient(colors: [.heroPink, .heroPurple], startPoint: .leading, endPoint: .trailing)))
-                                    .shadow(color: customLabel.isEmpty ? .clear : Color.heroPink.opacity(0.4), radius: 12, x: 0, y: 4)
-                            )
-                            .foregroundStyle(.white)
-                    }
-                    .disabled(customLabel.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .animation(.easeInOut(duration: 0.2), value: customLabel.isEmpty)
+                    Button("Save place", action: save)
+                        .buttonStyle(AccentButtonStyle())
+                        .disabled(customLabel.trimmingCharacters(in: .whitespaces).isEmpty)
 
                     Spacer()
                 }
                 .padding(16)
             }
-            .navigationTitle("Label This Place")
+            .navigationTitle("Label this place")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.appBackground, for: .navigationBar)
             .toolbar {

@@ -2,9 +2,8 @@
 //  MapExpensesView.swift
 //  ExpenseCompanion
 //
-//  Dark fintech map tab. Full-screen map with GTA-V style dark vignette,
-//  auto-zoom to current location, a safe-area-aware custom locate button,
-//  and category filter chips with glow.
+//  Map tab. Full-screen map with edge fades for legibility, auto-zoom to
+//  current location, a locate button, and category filter chips.
 //
 
 import SwiftUI
@@ -50,27 +49,18 @@ struct MapExpensesView: View {
                 .mapControls { MapCompass(); MapScaleView() }
                 .ignoresSafeArea()
 
-                // ── Adaptive vignette overlay ──────────────────────────────
-                // Dark mode: dramatic GTA-V black edges
-                // Light mode: soft mist so the map stays readable
-                let vignetteOpacity: Double = colorScheme == .dark ? 0.65 : 0.20
-                RadialGradient(
-                    colors: [Color.clear, Color.black.opacity(vignetteOpacity)],
-                    center: .center,
-                    startRadius: 100,
-                    endRadius: 480
-                )
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-
                 // Top + bottom edge fades (header / tab bar protection)
-                let fadeOpacity: Double = colorScheme == .dark ? 0.70 : 0.45
+                let fadeOpacity: Double = colorScheme == .dark ? 0.92 : 0.85
                 VStack {
                     LinearGradient(
-                        colors: [Color.appBackground.opacity(fadeOpacity), Color.clear],
+                        stops: [
+                            .init(color: Color.appBackground, location: 0),
+                            .init(color: Color.appBackground.opacity(fadeOpacity), location: 0.6),
+                            .init(color: Color.clear, location: 1)
+                        ],
                         startPoint: .top, endPoint: .bottom
                     )
-                    .frame(height: 160)
+                    .frame(height: 320)
                     .ignoresSafeArea(edges: .top)
                     Spacer()
                     LinearGradient(
@@ -84,40 +74,18 @@ struct MapExpensesView: View {
 
                 // ── Floating top bar ───────────────────────────────────────
                 VStack(spacing: 0) {
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("MAP")
-                                .font(.system(size: 10, weight: .semibold))
-                                .kerning(1.5)
-                                .foregroundStyle(Color.textTertiary)
-                            Text("\(clusters.count) spot\(clusters.count == 1 ? "" : "s")")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(Color.textPrimary)
-                        }
-                        Spacer()
-
-                        // Custom locate-me button — safe area aware
-                        Button {
+                    ScreenHeader(caption: "Map", light: "Spending", bold: "\(clusters.count) spot\(clusters.count == 1 ? "" : "s")") {
+                        CircleIconButton(systemName: "location.fill", filled: true) {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
                                 cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
                             }
                             Haptics.light()
-                        } label: {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.heroPink)
-                                .frame(width: 42, height: 42)
-                                .background(
-                                    Circle()
-                                        .fill(Color(red: 0.10, green: 0.10, blue: 0.13))
-                                        .overlay(Circle().strokeBorder(Color.heroPink.opacity(0.3), lineWidth: 1))
-                                )
-                                .shadow(color: Color.heroPink.opacity(0.3), radius: 8, x: 0, y: 3)
                         }
+                        .accessibilityLabel("Show my location")
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 56)   // below Dynamic Island / status bar
-                    .padding(.bottom, 10)
+                    .padding(.top, 52)   // below Dynamic Island / status bar
+                    .padding(.bottom, 12)
 
                     // Category filter chips
                     categoryFilterBar
@@ -144,7 +112,7 @@ struct MapExpensesView: View {
             HStack(spacing: 8) {
                 filterChip(
                     symbol: "square.grid.2x2", label: "All",
-                    color: .white,
+                    color: Color.textPrimary,
                     isSelected: activeCategoryFilter == nil
                 ) { activeCategoryFilter = nil }
 
@@ -165,27 +133,24 @@ struct MapExpensesView: View {
 
     private func filterChip(symbol: String, label: String, color: Color, isSelected: Bool, action: @escaping () -> Void) -> some View {
         let selected = isSelected
-        let chipBg: Color = colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.07)
+        let isAll = label == "All"
+        let selectedInk: Color = isAll ? Color.appBackground : Color.onAccent
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { action() }
             Haptics.light()
         } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(selected ? (color == .white ? Color.black : Color.white) : color)
-                Text(label)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(selected ? (color == .white ? Color.black : Color.white) : Color.textSecondary)
+                    .foregroundStyle(selected ? selectedInk : (isAll ? Color.textSecondary : color))
+                Text(label)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(selected ? selectedInk : Color.textSecondary)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(
-                Capsule()
-                    .fill(selected ? color : chipBg)
-                    .shadow(color: selected ? color.opacity(0.4) : .clear, radius: 8, x: 0, y: 2)
-            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(Capsule().fill(selected ? color : Color.cardSurface))
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selected)
@@ -207,29 +172,20 @@ private struct ClusterPinView: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(cluster.dominantCategory.color.opacity(0.25))
-                .frame(width: pinSize + 12, height: pinSize + 12)
-                .blur(radius: 7)
-
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [cluster.dominantCategory.color, cluster.dominantCategory.color.opacity(0.65)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    )
-                )
+                .fill(cluster.dominantCategory.color)
                 .frame(width: pinSize, height: pinSize)
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.28), lineWidth: 1.5))
-                .shadow(color: cluster.dominantCategory.color.opacity(0.55), radius: 9, x: 0, y: 3)
+                .overlay(Circle().strokeBorder(Color.appBackground, lineWidth: 2.5))
+                .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 3)
 
             if cluster.visitCount > 1 {
                 Text("\(cluster.visitCount)")
-                    .font(.system(size: pinSize * 0.38, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: pinSize * 0.38, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.onAccent)
             } else {
                 Image(systemName: cluster.dominantCategory.symbolName)
                     .font(.system(size: pinSize * 0.42, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onAccent)
             }
         }
         .transition(.scale(scale: 0.5).combined(with: .opacity))

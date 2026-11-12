@@ -35,7 +35,7 @@ struct ExpenseRowView: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(CurrencyFormatter.format(expense.amount))
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(Color.textPrimary)
                 Text(expense.date.formatted(.dateTime.hour().minute()))

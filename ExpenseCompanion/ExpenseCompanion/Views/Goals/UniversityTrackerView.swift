@@ -103,7 +103,7 @@ struct UniversityTrackerView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Fees").font(.system(size: 11)).foregroundStyle(Color.textTertiary)
                     Text(CurrencyFormatter.format(feesEUR, currencyCode: "EUR"))
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text("≈ \(CurrencyFormatter.format((feesEUR * rate).rounded()))")
                         .font(.system(size: 10)).foregroundStyle(Color.textTertiary)
@@ -264,7 +264,7 @@ private struct ApplicationRow: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(app.deadline.formatted(.dateTime.day().month(.abbreviated)))
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.textPrimary)
                 Text(app.status.isOpen ? daysText(app.daysToDeadline).uppercased() : app.status.rawValue.uppercased())
                     .font(.system(size: 10, weight: .semibold))

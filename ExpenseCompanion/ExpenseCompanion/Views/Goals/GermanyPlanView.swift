@@ -221,7 +221,7 @@ struct GermanyPlanView: View {
                     .foregroundStyle(Color.textSecondary)
                 Spacer()
                 Text(fundedBy.map { $0.formatted(.dateTime.day().month(.abbreviated).year()) } ?? "Never at ₹0/mo")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
             }
         }
@@ -265,7 +265,7 @@ struct GermanyPlanView: View {
                         .font(.system(size: 12)).foregroundStyle(Color.textSecondary)
                     Spacer()
                     Text("\(Int((share * 100).rounded()))%")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(shareColor)
                 }
                 TickGauge(progress: share, marker: shareColor, height: 28)
@@ -312,7 +312,7 @@ struct GermanyPlanView: View {
             }
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 15, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(Color.textPrimary)
         }
@@ -354,7 +354,7 @@ private struct MilestoneRow: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(CurrencyFormatter.format(milestone.amount))
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(Color.textPrimary)
                 Text(statusText)
@@ -401,7 +401,7 @@ private struct NumberRow: View {
                     .frame(maxWidth: 120)
                     .foregroundStyle(Color.textPrimary)
             }
-            .font(.system(size: 15, weight: .semibold, design: .rounded))
+            .font(.system(size: 15, weight: .semibold))
             .monospacedDigit()
         }
     }
