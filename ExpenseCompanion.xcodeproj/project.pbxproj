@@ -549,6 +549,7 @@
 				DEVELOPMENT_TEAM = T7259P8ZWT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Z;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "\"This app uses your location to track expense entries\"";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"This app needs your location to add expense entries\"";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -585,6 +586,7 @@
 				DEVELOPMENT_TEAM = T7259P8ZWT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Z;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "\"This app uses your location to track expense entries\"";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"This app needs your location to add expense entries\"";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
