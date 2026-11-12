@@ -72,7 +72,12 @@ private struct SpentPanel: View {
             }
             Spacer(minLength: 6)
             WAmount(symbol: data.currencySymbol, value: data.spentGrouped, size: amountSize)
-            if showsLeft {
+            if data.isEmpty {
+                Text("Open the app to sync")
+                    .font(.system(size: 11, weight: .medium))
+                    .opacity(0.6)
+                    .padding(.top, 2)
+            } else if showsLeft {
                 Text(data.dailyLimit > 0 ? data.leftOrOverText : "\(data.transactionCount) transactions")
                     .font(.system(size: 11, weight: .medium))
                     .opacity(0.6)

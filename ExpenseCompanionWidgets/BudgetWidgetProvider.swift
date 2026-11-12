@@ -34,12 +34,15 @@ struct BudgetWidgetProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (BudgetEntry) -> Void) {
-        let data = WidgetDataStore.load() ?? .placeholder
+        // The widget gallery preview shows sample numbers; a placed widget never does.
+        let data = context.isPreview ? .placeholder : (WidgetDataStore.load() ?? .empty)
         completion(BudgetEntry(date: .now, data: data))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<BudgetEntry>) -> Void) {
-        let data  = WidgetDataStore.load() ?? .placeholder
+        // No shared data means the app hasn't written yet (or the App Group isn't set up):
+        // show zeros rather than convincing fake numbers.
+        let data  = WidgetDataStore.load() ?? .empty
         let entry = BudgetEntry(date: .now, data: data)
 
         // Refresh at midnight for the new day, or every 30 min whichever is sooner

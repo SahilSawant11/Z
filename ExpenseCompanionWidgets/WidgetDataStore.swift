@@ -32,6 +32,21 @@ struct WidgetSpendingData: Codable {
     var remaining: Double { max(dailyLimit - todaySpent, 0) }
     var isOverBudget: Bool { todaySpent > dailyLimit && dailyLimit > 0 }
 
+    /// Shown when the app hasn't shared any data yet.
+    static var empty: WidgetSpendingData {
+        WidgetSpendingData(
+            todaySpent: 0, dailyLimit: 0,
+            currencySymbol: "₹", currencyCode: "INR",
+            weekTotal: 0, monthTotal: 0,
+            transactionCount: 0, lastUpdated: .distantPast,
+            recentExpenses: [], categoryBreakdown: [],
+            weeklySpending: Array(repeating: 0, count: 7)
+        )
+    }
+
+    /// True when this is the `empty` fallback rather than real app data.
+    var isEmpty: Bool { lastUpdated == .distantPast }
+
     static var placeholder: WidgetSpendingData {
         WidgetSpendingData(
             todaySpent: 2340, dailyLimit: 5000,
