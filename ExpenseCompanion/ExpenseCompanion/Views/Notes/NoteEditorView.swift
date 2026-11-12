@@ -17,47 +17,62 @@ struct NoteEditorView: View {
     var isSheet: Bool = false
 
     @State private var newItem = ""
+    @State private var showingDeleteConfirm = false
+    @State private var showsChecklist = false
     @FocusState private var focus: Field?
 
-    enum Field { case title, body, newItem }
+    enum Field: Hashable { case title, body, newItem }
 
     var body: some View {
-        ZStack {
-            DynamicGradientBackground()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                // Title: single line; Return moves to the body.
+                TextField("Title", text: $note.title)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(Color.textPrimary)
+                    .submitLabel(.next)
+                    .focused($focus, equals: .title)
+                    .onSubmit { focus = .body }
+                    .accessibilityIdentifier("note-title")
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    TextField("Title", text: $note.title, axis: .vertical)
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(Color.textPrimary)
-                        .focused($focus, equals: .title)
-                        .accessibilityIdentifier("note-title")
+                HStack(spacing: 8) {
+                    NoteLinkMenu(note: note)
+                    Spacer()
+                    Text("Edited \(note.updatedAt.formatted(.relative(presentation: .named)))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.textTertiary)
+                }
 
-                    linkRow
-
-                    TextField("Start writing…", text: $note.body, axis: .vertical)
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.textPrimary)
-                        .lineSpacing(4)
-                        .frame(minHeight: 120, alignment: .top)
-                        .focused($focus, equals: .body)
-                        .accessibilityIdentifier("note-body")
-
+                if !note.checklist.isEmpty || showsChecklist {
                     checklist
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 120)
+
+                // Body: the whole area below is tappable, not just the first line.
+                TextField("Start writing…", text: $note.body, axis: .vertical)
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.textPrimary)
+                    .lineSpacing(4)
+                    .focused($focus, equals: .body)
+                    .accessibilityIdentifier("note-body")
+
+                Color.clear
+                    .frame(maxWidth: .infinity, minHeight: 320)
+                    .contentShape(Rectangle())
+                    .onTapGesture { focus = .body }
             }
-            .scrollDismissesKeyboard(.interactively)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .background(Color.appBackground.ignoresSafeArea())
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.appBackground, for: .navigationBar)
+        .hidesTabBar()
         .toolbar {
             if isSheet {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
@@ -69,14 +84,31 @@ struct NoteEditorView: View {
                     Image(systemName: note.isPinned ? "pin.fill" : "pin")
                 }
                 .accessibilityLabel(note.isPinned ? "Unpin" : "Pin")
-                Button(role: .destructive) {
-                    modelContext.delete(note)
-                    try? modelContext.save()
-                    dismiss()
-                } label: {
+
+                Button { showingDeleteConfirm = true } label: {
                     Image(systemName: "trash")
                 }
                 .accessibilityLabel("Delete note")
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Button {
+                    showsChecklist = true
+                    // The field appears this frame; focus it once it's in the hierarchy.
+                    DispatchQueue.main.async { focus = .newItem }
+                } label: {
+                    Label("Checklist", systemImage: "checklist")
+                }
+                .accessibilityLabel("Add checklist item")
+                Spacer()
+                Button("Done") { focus = nil }
+                    .fontWeight(.semibold)
+            }
+        }
+        .confirmationDialog("Delete this note?", isPresented: $showingDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                modelContext.delete(note)
+                try? modelContext.save()
+                dismiss()
             }
         }
         .onAppear {
@@ -92,12 +124,6 @@ struct NoteEditorView: View {
         }
     }
 
-    // MARK: - Link
-
-    private var linkRow: some View {
-        NoteLinkMenu(note: note)
-    }
-
     // MARK: - Checklist
 
     private var checklist: some View {
@@ -105,55 +131,65 @@ struct NoteEditorView: View {
             ForEach($note.checklist) { $item in
                 HStack(spacing: 12) {
                     Button {
-                        item.isDone.toggle()
+                        withAnimation(.easeOut(duration: 0.15)) { item.isDone.toggle() }
                         note.touch()
                         Haptics.light()
                     } label: {
                         Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 20))
+                            .font(.system(size: 22))
                             .foregroundStyle(item.isDone ? Color.heroPink : Color.textTertiary)
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(item.isDone ? "Mark not done" : "Mark done")
+
                     TextField("Item", text: $item.title)
                         .font(.system(size: 16))
                         .foregroundStyle(item.isDone ? Color.textTertiary : Color.textPrimary)
                         .strikethrough(item.isDone, color: Color.textTertiary)
+
                     Button {
-                        note.checklist.removeAll { $0.id == item.id }
+                        withAnimation { note.checklist.removeAll { $0.id == item.id } }
                         note.touch()
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.textTertiary)
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove item")
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
             }
 
             HStack(spacing: 12) {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 20))
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.textTertiary)
-                TextField("Add checklist item", text: $newItem)
+                    .frame(width: 30, height: 30)
+                TextField("Add item", text: $newItem)
                     .font(.system(size: 16))
                     .focused($focus, equals: .newItem)
-                    .submitLabel(.next)
+                    .submitLabel(.return)
                     .onSubmit {
                         addItem()
-                        focus = .newItem
+                        focus = .newItem   // stay here for the next item
                     }
                     .accessibilityIdentifier("note-new-item")
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
         }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.cardSurface))
     }
 
     private func addItem() {
         let t = newItem.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return }
-        note.checklist.append(ChecklistItem(title: t))
+        withAnimation { note.checklist.append(ChecklistItem(title: t)) }
         note.touch()
         newItem = ""
     }

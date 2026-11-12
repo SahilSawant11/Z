@@ -56,6 +56,7 @@ struct UniversityTrackerView: View {
             }
         }
         .navigationTitle("Universities")
+        .hidesTabBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.appBackground, for: .navigationBar)

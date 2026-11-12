@@ -198,8 +198,9 @@ final class ExpenseCompanionUITests: XCTestCase {
         let title = app.textFields["note-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.typeText("IELTS prep")
+        app.buttons["Add checklist item"].tap()     // keyboard toolbar
         let item = app.textFields["note-new-item"]
-        item.tap()
+        XCTAssertTrue(item.waitForExistence(timeout: 3))
         item.typeText("Book test date\n")
         goBack()
 
@@ -231,10 +232,31 @@ final class ExpenseCompanionUITests: XCTestCase {
         reveal(linked)
         XCTAssertTrue(linked.exists, "note should show on the plan")
 
+        goBack()                                    // tab bar is hidden on the plan screen
         app.buttons["Notes"].tap()
         let card = element("note-Blocked account research")
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         XCTAssertTrue(card.label.contains("Germany plan"), "card should show its link, got: \(card.label)")
+    }
+
+    // MARK: - Navigation
+
+    /// The tab bar has five tabs, hides on detail screens, and Settings opens from Home.
+    func testTabBarHidesOnDetailScreensAndSettingsOpensFromHome() {
+        for tab in ["Home", "Map", "Stats", "Goals", "Notes"] {
+            XCTAssertTrue(app.buttons[tab].exists, "missing tab \(tab)")
+        }
+        XCTAssertEqual(app.buttons.matching(identifier: "Settings").count, 1,
+                       "Settings should only be the gear on Home, not a tab")
+
+        openGermanyPlan()
+        XCTAssertFalse(app.buttons["Notes"].waitForExistence(timeout: 1), "tab bar should hide on the plan")
+        goBack()
+        XCTAssertTrue(app.buttons["Notes"].waitForExistence(timeout: 3), "tab bar should come back")
+
+        app.buttons["Home"].tap()
+        app.buttons["Settings"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["preferences"].waitForExistence(timeout: 5), "Settings sheet should open")
     }
 
     // MARK: - Helpers

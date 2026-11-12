@@ -29,6 +29,7 @@ struct GermanyPlanView: View {
             }
         }
         .navigationTitle("Germany MS")
+        .hidesTabBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.appBackground, for: .navigationBar)

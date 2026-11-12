@@ -29,6 +29,7 @@ struct SalaryPlanView: View {
             }
         }
         .navigationTitle("Salary")
+        .hidesTabBar()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(Color.appBackground, for: .navigationBar)

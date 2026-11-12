@@ -14,6 +14,7 @@ struct DashboardView: View {
     @State private var viewModel: DashboardViewModel?
     @State private var showingAddExpense = false
     @State private var showingGoals = false
+    @State private var showingSettings = false
     @State private var selectedPeriod: Period = .today
 
     enum Period: String, CaseIterable {
@@ -88,6 +89,11 @@ struct DashboardView: View {
             .sheet(isPresented: $showingGoals, onDismiss: { viewModel?.refresh() }) {
                 GoalsListView()
             }
+            .sheet(isPresented: $showingSettings, onDismiss: { viewModel?.refresh() }) {
+                SettingsView()
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(Color.appBackground)
+            }
         }
     }
 
@@ -102,7 +108,12 @@ struct DashboardView: View {
                 SplitTitle(light: greeting.first, bold: greeting.second)
             }
             Spacer()
-            CircleIconButton(systemName: "target") { showingGoals = true }
+            HStack(spacing: 10) {
+                CircleIconButton(systemName: "target") { showingGoals = true }
+                    .accessibilityLabel("Open goals")
+                CircleIconButton(systemName: "gearshape.fill") { showingSettings = true }
+                    .accessibilityLabel("Settings")
+            }
         }
         .padding(.top, 8)
     }

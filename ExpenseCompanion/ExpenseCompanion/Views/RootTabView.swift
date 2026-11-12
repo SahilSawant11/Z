@@ -3,21 +3,44 @@
 //  ExpenseCompanion
 //
 //  Theme-controlled root. Reads @AppStorage("appTheme") and applies
-//  preferredColorScheme to the whole app — all sub-views inherit it.
-//  Liquid glass pill tab bar adapts to light / dark automatically.
+//  preferredColorScheme to the whole app. The floating tab bar uses Liquid
+//  Glass and hides on detail screens and while the keyboard is up.
 //
 
 import SwiftUI
 import SwiftData
+import Observation
+
+/// Lets detail screens hide the floating tab bar while they're on screen.
+@Observable
+final class TabBarVisibility {
+    fileprivate var hiders = 0
+    var isHidden: Bool { hiders > 0 }
+}
+
+private struct HidesTabBar: ViewModifier {
+    @Environment(TabBarVisibility.self) private var visibility: TabBarVisibility?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { visibility?.hiders += 1 }
+            .onDisappear { if let v = visibility { v.hiders = max(v.hiders - 1, 0) } }
+    }
+}
+
+extension View {
+    /// Hide the floating tab bar while this screen is visible.
+    func hidesTabBar() -> some View { modifier(HidesTabBar()) }
+}
 
 struct RootTabView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("appTheme") private var appTheme: AppTheme = .dark
 
     @State private var selectedTab: Tab = .dashboard
-    @State private var blobLeadX: CGFloat = 0
-    @State private var blobLeadXImmediate: CGFloat = 0
+    @State private var tabBar = TabBarVisibility()
+    @State private var keyboardVisible = false
+    @Namespace private var selection
 
     enum Tab: String, CaseIterable {
         case dashboard = "Home"
@@ -25,7 +48,6 @@ struct RootTabView: View {
         case stats     = "Stats"
         case goals     = "Goals"
         case notes     = "Notes"
-        case settings  = "Settings"
 
         var symbol: String {
             switch self {
@@ -34,10 +56,11 @@ struct RootTabView: View {
             case .stats:     return "chart.pie.fill"
             case .goals:     return "target"
             case .notes:     return "note.text"
-            case .settings:  return "gearshape.fill"
             }
         }
     }
+
+    private var showsTabBar: Bool { !tabBar.isHidden && !keyboardVisible }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -63,87 +86,60 @@ struct RootTabView: View {
                 NotesListView()
                     .tag(Tab.notes)
                     .toolbar(.hidden, for: .tabBar)
-
-                SettingsView()
-                    .tag(Tab.settings)
-                    .toolbar(.hidden, for: .tabBar)
             }
+            .environment(tabBar)
 
-            liquidTabBar
-                .padding(.bottom, 22)
+            if showsTabBar {
+                glassTabBar
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .ignoresSafeArea(.keyboard)
         .ignoresSafeArea(edges: .bottom)
-        // ── Single source of truth for the colour scheme ───────────────
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showsTabBar)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+        }
+        // Single source of truth for the colour scheme
         .preferredColorScheme(appTheme.colorScheme)
     }
 
-    // MARK: - Liquid Glass Tab Bar
+    // MARK: - Liquid Glass tab bar
 
-    private var liquidTabBar: some View {
-        GeometryReader { geo in
-            let w    = geo.size.width
-            let tabW = w / CGFloat(Tab.allCases.count)
-            let blobH: CGFloat = 44
-            let isDark = colorScheme == .dark
-
-            ZStack(alignment: .leading) {
-                // Adaptive frosted pill background
-                Capsule()
-                    .fill(Color.cardSurface)
-                    .shadow(color: .black.opacity(isDark ? 0.5 : 0.08), radius: 20, x: 0, y: 8)
-
-                // Liquid gradient blob
-                let leftCenter  = min(blobLeadX, blobLeadXImmediate)
-                let rightCenter = max(blobLeadX, blobLeadXImmediate)
-                let blobLeft  = leftCenter - blobH / 2
-                let blobWidth = (rightCenter - leftCenter) + blobH
-
-                RoundedRectangle(cornerRadius: blobH / 2, style: .continuous)
-                    .fill(Color.textPrimary)
-                    .frame(width: max(blobWidth, blobH), height: blobH)
-                    .offset(x: blobLeft)
-                    .animation(.spring(response: 0.45, dampingFraction: 0.62), value: blobLeadX)
-
-                // Tab icons
-                HStack(spacing: 0) {
-                    ForEach(Array(Tab.allCases.enumerated()), id: \.element) { idx, tab in
-                        let isSelected = selectedTab == tab
-                        Button {
-                            switchTab(to: tab, idx: idx, tabW: tabW)
-                        } label: {
-                            Image(systemName: tab.symbol)
-                                .font(.system(size: 19, weight: isSelected ? .bold : .regular))
-                                .foregroundStyle(isSelected ? Color.appBackground : Color.textTertiary)
-                                .scaleEffect(isSelected ? 1.08 : 1.0)
-                                .frame(width: tabW, height: geo.size.height)
-                                .contentShape(Rectangle())
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    private var glassTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(Tab.allCases, id: \.self) { tab in
+                let isSelected = selectedTab == tab
+                Button {
+                    guard tab != selectedTab else { return }
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) { selectedTab = tab }
+                    Haptics.light()
+                } label: {
+                    Image(systemName: tab.symbol)
+                        .font(.system(size: 18, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? Color.appBackground : Color.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background {
+                            if isSelected {
+                                Capsule()
+                                    .fill(Color.textPrimary)
+                                    .matchedGeometryEffect(id: "selected-tab", in: selection)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(tab.rawValue)
-                        .accessibilityAddTraits(isSelected ? .isSelected : [])
-                    }
+                        .contentShape(Capsule())
                 }
-            }
-            .onAppear {
-                let idx = CGFloat(Tab.allCases.firstIndex(of: selectedTab) ?? 0)
-                let center = tabW * idx + tabW / 2
-                blobLeadX = center
-                blobLeadXImmediate = center
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.rawValue)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .frame(height: 60)
-        .padding(.horizontal, 28)
-    }
-
-    private func switchTab(to tab: Tab, idx: Int, tabW: CGFloat) {
-        guard tab != selectedTab else { return }
-        let newCenter = tabW * CGFloat(idx) + tabW / 2
-        blobLeadXImmediate = newCenter
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
-            blobLeadX = newCenter
-            selectedTab = tab
-        }
-        Haptics.light()
+        .padding(6)
+        .glassEffect(.regular.interactive(), in: .capsule)
     }
 }
