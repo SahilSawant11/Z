@@ -114,6 +114,8 @@ struct RootTabView: View {
                                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(tab.rawValue)
+                        .accessibilityAddTraits(isSelected ? .isSelected : [])
                     }
                 }
             }

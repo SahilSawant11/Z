@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		57EF45EAF71A24E453968A80 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F16CB4E955F3CB02AD7CCD8F /* Foundation.framework */; };
+		7BD9976EF525D7F6DAE7E202 /* ExpenseCompanionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C5FE9FFECFD7D918C795BD /* ExpenseCompanionUITests.swift */; };
 		BA007ED330456B4100689BC9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA007ED230456B4100689BC9 /* WidgetKit.framework */; };
 		BA007ED530456B4100689BC9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA007ED430456B4100689BC9 /* SwiftUI.framework */; };
 		BA007EE430456B4100689BC9 /* ExpenseCompanionWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA007ED030456B4000689BC9 /* ExpenseCompanionWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -19,6 +21,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = BA007ECF30456B4000689BC9;
 			remoteInfo = ExpenseCompanionWidgetsExtension;
+		};
+		DE0881D18EE7201421AF765E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BA9EB92B30446940006F5559 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BA9EB93230446940006F5559;
+			remoteInfo = ExpenseCompanion;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -37,10 +46,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0FC2C266F7AB04C810F6C4C1 /* ExpenseCompanionUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExpenseCompanionUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA007ED030456B4000689BC9 /* ExpenseCompanionWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ExpenseCompanionWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BA007ED230456B4100689BC9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		BA007ED430456B4100689BC9 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		BA9EB93330446940006F5559 /* ExpenseCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExpenseCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5C5FE9FFECFD7D918C795BD /* ExpenseCompanionUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExpenseCompanionUITests.swift; sourceTree = "<group>"; };
+		F16CB4E955F3CB02AD7CCD8F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -64,12 +76,22 @@
 		};
 		BA9EB93530446940006F5559 /* ExpenseCompanion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = ExpenseCompanion;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		34966A95F48A0BA4D1D78A4A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57EF45EAF71A24E453968A80 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BA007ECD30456B4000689BC9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -89,11 +111,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8EF62A6150A2E7758F7CC883 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				F16CB4E955F3CB02AD7CCD8F /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		98ECE2F432A8279F2A898820 /* ExpenseCompanionUITests */ = {
+			isa = PBXGroup;
+			children = (
+				C5C5FE9FFECFD7D918C795BD /* ExpenseCompanionUITests.swift */,
+			);
+			name = ExpenseCompanionUITests;
+			path = ExpenseCompanionUITests;
+			sourceTree = "<group>";
+		};
 		BA007ED130456B4100689BC9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				BA007ED230456B4100689BC9 /* WidgetKit.framework */,
 				BA007ED430456B4100689BC9 /* SwiftUI.framework */,
+				8EF62A6150A2E7758F7CC883 /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -105,6 +145,7 @@
 				BA007ED630456B4100689BC9 /* ExpenseCompanionWidgets */,
 				BA007ED130456B4100689BC9 /* Frameworks */,
 				BA9EB93430446940006F5559 /* Products */,
+				98ECE2F432A8279F2A898820 /* ExpenseCompanionUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -113,6 +154,7 @@
 			children = (
 				BA9EB93330446940006F5559 /* ExpenseCompanion.app */,
 				BA007ED030456B4000689BC9 /* ExpenseCompanionWidgetsExtension.appex */,
+				0FC2C266F7AB04C810F6C4C1 /* ExpenseCompanionUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -136,8 +178,6 @@
 				BA007ED630456B4100689BC9 /* ExpenseCompanionWidgets */,
 			);
 			name = ExpenseCompanionWidgetsExtension;
-			packageProductDependencies = (
-			);
 			productName = ExpenseCompanionWidgetsExtension;
 			productReference = BA007ED030456B4000689BC9 /* ExpenseCompanionWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -160,11 +200,27 @@
 				BA9EB93530446940006F5559 /* ExpenseCompanion */,
 			);
 			name = ExpenseCompanion;
-			packageProductDependencies = (
-			);
 			productName = ExpenseCompanion;
 			productReference = BA9EB93330446940006F5559 /* ExpenseCompanion.app */;
 			productType = "com.apple.product-type.application";
+		};
+		D234663FAEF4261D0B913051 /* ExpenseCompanionUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE3445BCAD56270798DAD5EE /* Build configuration list for PBXNativeTarget "ExpenseCompanionUITests" */;
+			buildPhases = (
+				135136962BA53FF722E593BA /* Sources */,
+				34966A95F48A0BA4D1D78A4A /* Frameworks */,
+				D8671B6EF97E1F97F2723571 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4E08D25A4AB6650C2FE7EE10 /* PBXTargetDependency */,
+			);
+			name = ExpenseCompanionUITests;
+			productName = ExpenseCompanionUITests;
+			productReference = 0FC2C266F7AB04C810F6C4C1 /* ExpenseCompanionUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -200,6 +256,7 @@
 			targets = (
 				BA9EB93230446940006F5559 /* ExpenseCompanion */,
 				BA007ECF30456B4000689BC9 /* ExpenseCompanionWidgetsExtension */,
+				D234663FAEF4261D0B913051 /* ExpenseCompanionUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -219,9 +276,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D8671B6EF97E1F97F2723571 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		135136962BA53FF722E593BA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7BD9976EF525D7F6DAE7E202 /* ExpenseCompanionUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BA007ECC30456B4000689BC9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -239,6 +311,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		4E08D25A4AB6650C2FE7EE10 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ExpenseCompanion;
+			target = BA9EB93230446940006F5559 /* ExpenseCompanion */;
+			targetProxy = DE0881D18EE7201421AF765E /* PBXContainerItemProxy */;
+		};
 		BA007EE330456B4100689BC9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BA007ECF30456B4000689BC9 /* ExpenseCompanionWidgetsExtension */;
@@ -247,6 +325,37 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		8BCA34DF1E1F70DF16DFFD1C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = T7259P8ZWT;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sahil.ExpenseCompanionUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ExpenseCompanion;
+			};
+			name = Debug;
+		};
+		B76A54327A5DB14E64D164E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = T7259P8ZWT;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sahil.ExpenseCompanionUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ExpenseCompanion;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		BA007EE630456B4100689BC9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -526,6 +635,15 @@
 			buildConfigurations = (
 				BA9EB94130446942006F5559 /* Debug */,
 				BA9EB94230446942006F5559 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE3445BCAD56270798DAD5EE /* Build configuration list for PBXNativeTarget "ExpenseCompanionUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B76A54327A5DB14E64D164E3 /* Release */,
+				8BCA34DF1E1F70DF16DFFD1C /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

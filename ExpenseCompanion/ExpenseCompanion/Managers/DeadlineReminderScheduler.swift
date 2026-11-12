@@ -39,6 +39,7 @@ enum DeadlineReminderScheduler {
     // MARK: - Public
 
     static func reschedule(context: ModelContext) async {
+        guard !AppEnvironment.isUITesting else { return }
         let center = UNUserNotificationCenter.current()
         await removeAll(center: center)
         guard isEnabled else { return }

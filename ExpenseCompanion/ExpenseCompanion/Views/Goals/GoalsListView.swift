@@ -29,6 +29,7 @@ struct GoalsListView: View {
                             GermanyPlanEntryCard()
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("germany-plan-card")
 
                         if goals.isEmpty {
                             HStack(spacing: 12) {

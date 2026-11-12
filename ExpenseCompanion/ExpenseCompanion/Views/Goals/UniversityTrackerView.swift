@@ -44,6 +44,8 @@ struct UniversityTrackerView: View {
                         ForEach(filtered) { app in
                             ApplicationRow(app: app)
                                 .contentShape(Rectangle())
+                                .accessibilityElement(children: .combine)
+                                .accessibilityIdentifier("program-\(app.university)")
                                 .onTapGesture { editing = app }
                                 .contextMenu { statusMenu(for: app) }
                         }
@@ -63,6 +65,7 @@ struct UniversityTrackerView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showingAdd = true } label: { Image(systemName: "plus") }
+                    .accessibilityLabel("Add program")
             }
         }
         .sheet(item: $editing) { app in ApplicationEditorView(app: app) }
@@ -120,6 +123,7 @@ struct UniversityTrackerView: View {
                         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.heroPink.opacity(0.12)))
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("sync-fees")
             }
         }
         .glassCard()

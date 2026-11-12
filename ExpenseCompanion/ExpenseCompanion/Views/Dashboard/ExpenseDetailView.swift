@@ -80,15 +80,6 @@ struct ExpenseDetailView: View {
                             .glassCard()
                         }
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            GlassSectionHeader(title: "Date", systemImage: "calendar")
-                            Text(expense.date.formatted(date: .long, time: .shortened))
-                                .font(.subheadline)
-                                .foregroundStyle(Color.textSecondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassCard()
-
                         // Delete
                         Button(role: .destructive) {
                             showingDeleteConfirm = true

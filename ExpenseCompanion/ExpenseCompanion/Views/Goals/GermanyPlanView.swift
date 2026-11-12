@@ -60,6 +60,7 @@ struct GermanyPlanView: View {
                 savingsCard(plan: plan)
                 NavigationLink { UniversityTrackerView() } label: { universitiesCard }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("universities-card")
 
                 GlassSectionHeader(title: "Cost timeline", systemImage: "calendar")
                     .padding(.top, 6)
@@ -67,6 +68,8 @@ struct GermanyPlanView: View {
                     ForEach(milestones) { m in
                         MilestoneRow(milestone: m, projection: byID[m.id])
                             .contentShape(Rectangle())
+                            .accessibilityElement(children: .combine)
+                            .accessibilityIdentifier("cost-\(m.title)")
                             .onTapGesture { editing = m }
                             .contextMenu {
                                 Button(m.isPaid ? "Mark unpaid" : "Mark paid",
@@ -315,6 +318,7 @@ struct GermanyPlanView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(Color.textPrimary)
+                .accessibilityIdentifier("stat-\(title)")
         }
     }
 }
@@ -399,6 +403,7 @@ private struct NumberRow: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 120)
+                    .accessibilityIdentifier("field-\(label)")
                     .foregroundStyle(Color.textPrimary)
             }
             .font(.system(size: 15, weight: .semibold))

@@ -9,6 +9,11 @@
 import SwiftUI
 import SwiftData
 
+enum AppEnvironment {
+    /// Set by the UI test target via the `-uiTesting` launch argument.
+    static let isUITesting = ProcessInfo.processInfo.arguments.contains("-uiTesting")
+}
+
 @main
 struct ExpenseCompanionApp: App {
 
@@ -26,11 +31,10 @@ struct ExpenseCompanionApp: App {
             UniversityApplication.self
         ])
 
-        let configuration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .automatic
-        )
+        // UI tests get a fresh, throwaway store so every run starts from the same state.
+        let configuration = AppEnvironment.isUITesting
+            ? ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+            : ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .automatic)
 
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
