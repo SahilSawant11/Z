@@ -131,7 +131,7 @@ final class ExpenseCompanionUITests: XCTestCase {
         sync.tap()
         XCTAssertTrue(sync.label.contains("updated"), "button should confirm, got: \(sync.label)")
 
-        app.navigationBars.buttons.firstMatch.tap()   // back to the plan
+        goBack()   // back to the plan
 
         let synced = element("cost-Applications × 2")
         reveal(synced)
@@ -140,7 +140,55 @@ final class ExpenseCompanionUITests: XCTestCase {
         XCTAssertFalse(element("cost-uni-assist × 10").exists)
     }
 
+    // MARK: - Salary
+
+    /// Default buckets (₹350×30 + 4,500 + 1,000 + 1,000 = ₹17,000) against a ₹35,534 salary
+    /// leave ₹18,534 a month, which becomes the plan's monthly savings.
+    func testSalaryBucketsSetMonthlySavings() {
+        openGermanyPlan()
+        let link = element("salary-link")
+        XCTAssertTrue(link.waitForExistence(timeout: 5))
+        XCTAssertTrue(link.label.contains("18,534"), "expected ₹18,534/month, got: \(link.label)")
+    }
+
+    /// Logging a payday adds the leftover to "Saved so far"; deleting it takes it back out.
+    func testLoggingPaydayAddsLeftoverToSavings() {
+        openGermanyPlan()
+        element("salary-link").tap()
+        XCTAssertTrue(app.navigationBars["Salary"].waitForExistence(timeout: 5))
+
+        app.buttons["log-payday"].tap()
+        let amount = app.textFields["payday-amount"]
+        XCTAssertTrue(amount.waitForExistence(timeout: 5))
+        XCTAssertEqual(amount.value as? String, "35534", "amount should be prefilled with expected salary")
+        app.buttons["Save"].tap()
+
+        let row = element("payday-row")
+        reveal(row)
+        XCTAssertTrue(row.label.contains("18,534"), "payday should save ₹18,534, got: \(row.label)")
+
+        goBack()   // back to the plan
+        let savings = app.textFields["field-Saved so far"]
+        reveal(savings, upward: true)
+        XCTAssertTrue((savings.value as? String ?? "").contains("18,534"),
+                      "savings should be ₹18,534, got: \(savings.value ?? "nil")")
+
+        element("salary-link").tap()
+        reveal(row)
+        row.press(forDuration: 1.0)
+        app.buttons["Delete payday"].tap()
+        goBack()
+        reveal(savings, upward: true)
+        XCTAssertEqual(savings.value as? String, "0")
+    }
+
     // MARK: - Helpers
+
+    /// Taps the navigation bar's Back button (not whatever toolbar button happens to be first).
+    private func goBack() {
+        let back = app.navigationBars.buttons["Back"]
+        (back.exists ? back : app.navigationBars.buttons.firstMatch).tap()
+    }
 
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier].firstMatch
@@ -171,11 +219,21 @@ final class ExpenseCompanionUITests: XCTestCase {
         XCTAssertTrue(element("program-\(name)").waitForExistence(timeout: 5))
     }
 
-    /// Scrolls until the element is on screen and hittable.
+    /// Scrolls until the element is hittable and clear of the floating tab bar,
+    /// which overlays the bottom of every screen (isHittable doesn't account for it).
     private func reveal(_ el: XCUIElement, upward: Bool = false) {
+        let safeBottom = app.frame.height - 150
         var attempts = 0
-        while !(el.exists && el.isHittable) && attempts < 10 {
-            upward ? app.swipeDown() : app.swipeUp()
+        while !(el.exists && el.isHittable && el.frame.midY < safeBottom) && attempts < 10 {
+            if upward {
+                app.swipeDown()
+            } else if el.exists && el.isHittable {
+                // On screen but under the tab bar: nudge it up a little.
+                app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+                    .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)))
+            } else {
+                app.swipeUp()
+            }
             attempts += 1
         }
     }

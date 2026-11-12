@@ -28,7 +28,9 @@ struct ExpenseCompanionApp: App {
             FrequentPlace.self,
             StudyAbroadPlan.self,
             PlanMilestone.self,
-            UniversityApplication.self
+            UniversityApplication.self,
+            SalaryBucket.self,
+            PaydayEntry.self
         ])
 
         // UI tests get a fresh, throwaway store so every run starts from the same state.

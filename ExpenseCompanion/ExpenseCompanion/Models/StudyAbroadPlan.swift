@@ -21,8 +21,11 @@ final class StudyAbroadPlan {
     // Savings
     /// Cash already set aside for the plan (₹). Marking a milestone paid deducts from this.
     var currentSavings: Double = 0
-    /// Expected amount saved per month going forward (₹).
+    /// Expected amount saved per month going forward (₹). Derived from the salary
+    /// plan (expected salary − buckets) once salary buckets exist.
     var monthlySavings: Double = 20_000
+    /// Expected monthly salary (₹), fixed part. Actual paydays are logged separately.
+    var expectedSalary: Double = 35_534
 
     // Post-admission costs (EUR), funded by the loan
     var eurToInr: Double = 90

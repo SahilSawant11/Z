@@ -45,7 +45,8 @@ struct GermanyPlanView: View {
     }
 
     private func seedIfNeeded() {
-        _ = try? StudyPlanRepository(context: modelContext).fetchOrCreatePlan()
+        let repo = StudyPlanRepository(context: modelContext)
+        if let plan = try? repo.fetchOrCreatePlan() { try? repo.ensureSalaryPlan(plan) }
     }
 
     // MARK: - Content
@@ -216,7 +217,27 @@ struct GermanyPlanView: View {
         return VStack(spacing: 12) {
             NumberRow(label: "Saved so far", value: $plan.currentSavings, prefix: "₹")
             Divider().overlay(Color.cardBorder)
-            NumberRow(label: "Saving per month", value: $plan.monthlySavings, prefix: "₹")
+            NavigationLink { SalaryPlanView() } label: {
+                HStack {
+                    Text("Saving per month")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textSecondary)
+                    Spacer()
+                    Text(CurrencyFormatter.format(plan.monthlySavings))
+                        .font(.system(size: 15, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.textPrimary)
+                    Text("from salary")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.heroPink)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.textTertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("salary-link")
             Divider().overlay(Color.cardBorder)
             HStack {
                 Text("Everything funded by")
