@@ -40,7 +40,9 @@ struct RootTabView: View {
     @State private var selectedTab: Tab = .dashboard
     @State private var tabBar = TabBarVisibility()
     @State private var keyboardVisible = false
-    @Namespace private var selection
+    /// Pill centre while the finger is on the bar; nil when resting on the selected tab.
+    @State private var dragX: CGFloat?
+    @State private var hoveredTab: Tab?
 
     enum Tab: String, CaseIterable {
         case dashboard = "Home"
@@ -49,13 +51,14 @@ struct RootTabView: View {
         case goals     = "Goals"
         case notes     = "Notes"
 
-        var symbol: String {
+        /// Outline when idle, filled when selected (like the system tab bars).
+        func symbol(selected: Bool) -> String {
             switch self {
-            case .dashboard: return "house.fill"
-            case .map:       return "map.fill"
-            case .stats:     return "chart.pie.fill"
-            case .goals:     return "target"
-            case .notes:     return "note.text"
+            case .dashboard: return selected ? "house.fill" : "house"
+            case .map:       return selected ? "map.fill" : "map"
+            case .stats:     return selected ? "chart.bar.fill" : "chart.bar"
+            case .goals:     return selected ? "flag.fill" : "flag"
+            case .notes:     return selected ? "doc.text.fill" : "doc.text"
             }
         }
     }
@@ -91,7 +94,7 @@ struct RootTabView: View {
 
             if showsTabBar {
                 glassTabBar
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, 28)
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -111,35 +114,84 @@ struct RootTabView: View {
 
     // MARK: - Liquid Glass tab bar
 
+    /// Apple Music–style bar: tap a tab, or press and slide. The pill follows the
+    /// finger like a lens, the tab under it lights up, and it snaps on release.
     private var glassTabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(Tab.allCases, id: \.self) { tab in
-                let isSelected = selectedTab == tab
-                Button {
-                    guard tab != selectedTab else { return }
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) { selectedTab = tab }
-                    Haptics.light()
-                } label: {
-                    Image(systemName: tab.symbol)
-                        .font(.system(size: 18, weight: isSelected ? .semibold : .regular))
-                        .foregroundStyle(isSelected ? Color.appBackground : Color.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background {
-                            if isSelected {
-                                Capsule()
-                                    .fill(Color.textPrimary)
-                                    .matchedGeometryEffect(id: "selected-tab", in: selection)
-                            }
+        GeometryReader { geo in
+            let tabs = Tab.allCases
+            let tabW = geo.size.width / CGFloat(tabs.count)
+            let selectedIndex = CGFloat(tabs.firstIndex(of: selectedTab) ?? 0)
+            let restingX = tabW * (selectedIndex + 0.5)
+            let pillX = dragX ?? restingX
+            let isDragging = dragX != nil
+            let highlighted = hoveredTab ?? selectedTab
+
+            ZStack(alignment: .leading) {
+                // Selection pill (lens)
+                Capsule()
+                    .fill(Color.textPrimary.opacity(isDragging ? 0.16 : 0.10))
+                    .frame(width: tabW - 4, height: geo.size.height)
+                    .scaleEffect(isDragging ? 1.12 : 1)
+                    .position(x: pillX, y: geo.size.height / 2)
+                    .animation(isDragging ? .interactiveSpring(response: 0.18, dampingFraction: 0.86)
+                                          : .spring(response: 0.42, dampingFraction: 0.78), value: pillX)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
+
+                HStack(spacing: 0) {
+                    ForEach(tabs, id: \.self) { tab in
+                        let lit = highlighted == tab
+                        VStack(spacing: 3) {
+                            Image(systemName: tab.symbol(selected: lit))
+                                .font(.system(size: 19, weight: .medium))
+                                .frame(height: 22)
+                            Text(tab.rawValue)
+                                .font(.system(size: 10, weight: lit ? .semibold : .medium))
                         }
-                        .contentShape(Capsule())
+                        .foregroundStyle(lit ? Color.heroPink : Color.textSecondary)
+                        .scaleEffect(lit && isDragging ? 1.08 : 1)
+                        .frame(width: tabW, height: geo.size.height)
+                        .contentShape(Rectangle())
+                        .animation(.easeOut(duration: 0.15), value: lit)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(tab.rawValue)
+                        .accessibilityAddTraits(selectedTab == tab ? [.isButton, .isSelected] : .isButton)
+                        .accessibilityAction { select(tab) }
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(tab.rawValue)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
+            .contentShape(Capsule())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let x = min(max(value.location.x, tabW / 2), geo.size.width - tabW / 2)
+                        // Only start the lens once the finger actually moves (a tap stays a tap).
+                        if dragX != nil || abs(value.translation.width) > 4 {
+                            dragX = x
+                        }
+                        let tab = tabs[min(max(Int(value.location.x / tabW), 0), tabs.count - 1)]
+                        if tab != hoveredTab {
+                            if hoveredTab != nil { Haptics.light() }
+                            hoveredTab = tab
+                        }
+                    }
+                    .onEnded { value in
+                        let tab = tabs[min(max(Int(value.location.x / tabW), 0), tabs.count - 1)]
+                        select(tab)
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+                            dragX = nil
+                            hoveredTab = nil
+                        }
+                    }
+            )
         }
-        .padding(6)
+        .frame(height: 56)
+        .padding(5)
         .glassEffect(.regular.interactive(), in: .capsule)
+    }
+
+    private func select(_ tab: Tab) {
+        guard tab != selectedTab else { return }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) { selectedTab = tab }
+        Haptics.light()
     }
 }

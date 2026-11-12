@@ -259,6 +259,17 @@ final class ExpenseCompanionUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["preferences"].waitForExistence(timeout: 5), "Settings sheet should open")
     }
 
+    /// Pressing the selected tab and sliding to another selects it on release (Apple Music style).
+    func testDraggingAcrossTabBarSelectsTab() {
+        XCTAssertTrue(app.buttons["Home"].isSelected)
+        app.buttons["Home"].press(forDuration: 0.2, thenDragTo: app.buttons["Notes"])
+        XCTAssertTrue(app.staticTexts["notes"].waitForExistence(timeout: 3), "Notes screen should open")
+        XCTAssertTrue(app.buttons["Notes"].isSelected)
+
+        app.buttons["Notes"].press(forDuration: 0.2, thenDragTo: app.buttons["Stats"])
+        XCTAssertTrue(app.buttons["Stats"].isSelected)
+    }
+
     // MARK: - Helpers
 
     /// Taps the navigation bar's Back button (not whatever toolbar button happens to be first).
