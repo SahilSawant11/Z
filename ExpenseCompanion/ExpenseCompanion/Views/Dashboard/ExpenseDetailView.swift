@@ -80,6 +80,12 @@ struct ExpenseDetailView: View {
                             .glassCard()
                         }
 
+                        LinkedNotesCard(
+                            kind: .expense,
+                            itemID: expense.id,
+                            itemTitle: "\(expense.category.rawValue) · \(CurrencyFormatter.format(expense.amount)) · \(expense.date.formatted(.dateTime.day().month(.abbreviated)))"
+                        )
+
                         // Delete
                         Button(role: .destructive) {
                             showingDeleteConfirm = true

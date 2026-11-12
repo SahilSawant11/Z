@@ -101,6 +101,9 @@ struct GermanyPlanView: View {
                 GlassSectionHeader(title: "Loan · after admission", systemImage: "building.columns")
                     .padding(.top, 6)
                 loanCard(plan: plan)
+
+                LinkedNotesCard(kind: .plan, itemID: plan.id, itemTitle: "Germany plan")
+                    .padding(.top, 6)
             }
             .padding(16)
             .padding(.bottom, 110)

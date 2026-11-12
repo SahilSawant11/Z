@@ -24,6 +24,7 @@ struct RootTabView: View {
         case map       = "Map"
         case stats     = "Stats"
         case goals     = "Goals"
+        case notes     = "Notes"
         case settings  = "Settings"
 
         var symbol: String {
@@ -32,6 +33,7 @@ struct RootTabView: View {
             case .map:       return "map.fill"
             case .stats:     return "chart.pie.fill"
             case .goals:     return "target"
+            case .notes:     return "note.text"
             case .settings:  return "gearshape.fill"
             }
         }
@@ -56,6 +58,10 @@ struct RootTabView: View {
 
                 GoalsListView()
                     .tag(Tab.goals)
+                    .toolbar(.hidden, for: .tabBar)
+
+                NotesListView()
+                    .tag(Tab.notes)
                     .toolbar(.hidden, for: .tabBar)
 
                 SettingsView()

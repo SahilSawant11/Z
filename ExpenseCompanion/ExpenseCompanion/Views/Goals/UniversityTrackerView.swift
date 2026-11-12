@@ -366,7 +366,13 @@ struct ApplicationEditorView: View {
                         .lineLimit(3...8)
                 }
 
-                if app != nil {
+                if let app {
+                    Section {
+                        LinkedNotesCard(kind: .university, itemID: app.id, itemTitle: app.university)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                    }
+
                     Section {
                         Button("Delete program", role: .destructive) { showingDeleteConfirm = true }
                     }

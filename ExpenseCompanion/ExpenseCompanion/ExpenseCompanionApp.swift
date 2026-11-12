@@ -30,7 +30,8 @@ struct ExpenseCompanionApp: App {
             PlanMilestone.self,
             UniversityApplication.self,
             SalaryBucket.self,
-            PaydayEntry.self
+            PaydayEntry.self,
+            Note.self
         ])
 
         // UI tests get a fresh, throwaway store so every run starts from the same state.

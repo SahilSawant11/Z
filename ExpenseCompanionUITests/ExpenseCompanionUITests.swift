@@ -182,6 +182,61 @@ final class ExpenseCompanionUITests: XCTestCase {
         XCTAssertEqual(savings.value as? String, "0")
     }
 
+    // MARK: - Notes
+
+    /// A new note shows in the list, is found by search, and an empty one is discarded.
+    func testCreatingAndSearchingNotes() {
+        app.buttons["Notes"].tap()
+
+        // Empty note is thrown away on leaving
+        app.buttons["New note"].tap()
+        XCTAssertTrue(app.textFields["note-title"].waitForExistence(timeout: 5))
+        goBack()
+        XCTAssertTrue(app.staticTexts["No notes yet"].waitForExistence(timeout: 5))
+
+        app.buttons["New note"].tap()
+        let title = app.textFields["note-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.typeText("IELTS prep")
+        let item = app.textFields["note-new-item"]
+        item.tap()
+        item.typeText("Book test date\n")
+        goBack()
+
+        let card = element("note-IELTS prep")
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("0/1"), "checklist count should show, got: \(card.label)")
+
+        let search = app.textFields["Search notes"]
+        search.tap()
+        search.typeText("zzz")
+        XCTAssertTrue(app.staticTexts["No matches"].waitForExistence(timeout: 3))
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 3) + "ielts")
+        XCTAssertTrue(card.waitForExistence(timeout: 3))
+    }
+
+    /// A note added from the Germany plan is linked to it and shows in both places.
+    func testLinkedNoteShowsOnPlanAndInNotesTab() {
+        openGermanyPlan()
+        let add = element("linked-notes-add")
+        reveal(add)
+        add.tap()
+
+        let title = app.textFields["note-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.typeText("Blocked account research")
+        app.buttons["Done"].tap()
+
+        let linked = element("linked-note-Blocked account research")
+        reveal(linked)
+        XCTAssertTrue(linked.exists, "note should show on the plan")
+
+        app.buttons["Notes"].tap()
+        let card = element("note-Blocked account research")
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("Germany plan"), "card should show its link, got: \(card.label)")
+    }
+
     // MARK: - Helpers
 
     /// Taps the navigation bar's Back button (not whatever toolbar button happens to be first).
