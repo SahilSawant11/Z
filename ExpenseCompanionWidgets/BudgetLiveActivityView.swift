@@ -2,9 +2,9 @@
 //  BudgetLiveActivityView.swift
 //  ExpenseCompanionWidgets
 //
-//  Dark fintech Live Activity — Dynamic Island + Lock Screen.
-//  Fixed: expanded bottom uses scaleEffect (no GeometryReader), smaller
-//  fonts and tighter margins so nothing gets cropped.
+//  Live Activity: Dynamic Island + Lock Screen banner.
+//  No GeometryReader anywhere (it clipped in the expanded island); gauges
+//  are built from fixed-size ticks instead.
 //
 
 import ActivityKit
@@ -17,7 +17,7 @@ struct BudgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: BudgetActivityAttributes.self) { context in
             BudgetBannerView(attributes: context.attributes, state: context.state)
-                .activityBackgroundTint(Color(red: 0.051, green: 0.051, blue: 0.063))
+                .activityBackgroundTint(W.bg)
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
@@ -43,7 +43,7 @@ struct BudgetLiveActivity: Widget {
                     .foregroundStyle(islandPink)
             } compactTrailing: {
                 Text(context.state.compactText(symbol: context.attributes.currencySymbol))
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .medium))
                     .monospacedDigit()
                     .foregroundStyle(context.state.isOverBudget ? islandRed : .white)
                     .contentTransition(.numericText())
@@ -58,16 +58,11 @@ struct BudgetLiveActivity: Widget {
 
 // MARK: - Color tokens
 
-private let islandPink   = Color(red: 1.0,   green: 0.176, blue: 0.471)
-private let islandPurple = Color(red: 0.753, green: 0.149, blue: 0.827)
-private let islandRed    = Color(red: 1.0,   green: 0.25,  blue: 0.25)
-private let textPrimary   = Color.white
-private let textSecondary = Color.white.opacity(0.45)
-private let textTertiary  = Color.white.opacity(0.28)
-
-private var pinkPurpleGrad: LinearGradient {
-    LinearGradient(colors: [islandPink, islandPurple], startPoint: .leading, endPoint: .trailing)
-}
+private let islandPink    = W.pink
+private let islandRed     = W.red
+private let textPrimary   = W.text1
+private let textSecondary = W.text2
+private let textTertiary  = W.text3
 
 // MARK: - Minimal Ring
 
@@ -96,15 +91,9 @@ private struct BudgetExpandedLeading: View {
             Image(systemName: "creditcard.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(islandPink)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("BUDGET")
-                    .font(.system(size: 8, weight: .semibold))
-                    .kerning(0.8)
-                    .foregroundStyle(textTertiary)
-                Text("Today")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(textPrimary)
-            }
+            Text("Today")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(textPrimary)
         }
     }
 }
@@ -116,7 +105,8 @@ private struct BudgetExpandedTrailing: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 1) {
             Text("\(Int(state.usedFraction * 100))%")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(.system(size: 17, weight: .regular))
+                .monospacedDigit()
                 .foregroundStyle(state.isOverBudget ? islandRed : textPrimary)
                 .contentTransition(.numericText())
             Text("used")
@@ -139,55 +129,34 @@ private struct BudgetExpandedBottom: View {
             HStack(alignment: .bottom, spacing: 0) {
                 // Spent
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("SPENT")
-                        .font(.system(size: 8, weight: .semibold))
-                        .kerning(0.8)
+                    Text("Spent")
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(textTertiary)
-                    HStack(alignment: .firstTextBaseline, spacing: 1) {
-                        Text(attributes.currencySymbol)
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundStyle(textSecondary)
-                        Text(fmt(state.spent))
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(state.isOverBudget ? islandRed : textPrimary)
-                            .contentTransition(.numericText())
-                    }
+                    WAmount(symbol: attributes.currencySymbol,
+                            value: W.grouped(state.spent, currencyCode: state.currencyCode),
+                            size: 30)
+                        .foregroundStyle(state.isOverBudget ? islandRed : textPrimary)
+                        .contentTransition(.numericText())
                 }
 
                 Spacer(minLength: 8)
 
                 // Remaining / Limit
                 VStack(alignment: .trailing, spacing: 1) {
-                    Text(state.isOverBudget ? "OVER" : "LEFT")
-                        .font(.system(size: 8, weight: .semibold))
-                        .kerning(0.8)
+                    Text(state.isOverBudget ? "Over" : "Left")
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(textTertiary)
-                    HStack(alignment: .firstTextBaseline, spacing: 1) {
-                        Text(attributes.currencySymbol)
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                            .foregroundStyle(textSecondary)
-                        Text(fmt(state.isOverBudget ? state.spent - state.limit : state.remaining))
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(state.isOverBudget ? islandRed : islandPink)
-                            .contentTransition(.numericText())
-                    }
+                    Text(attributes.currencySymbol + fmt(state.isOverBudget ? state.spent - state.limit : state.remaining))
+                        .font(.system(size: 17, weight: .regular))
+                        .monospacedDigit()
+                        .foregroundStyle(state.isOverBudget ? islandRed : islandPink)
+                        .contentTransition(.numericText())
                 }
             }
 
-            // Progress bar — scaleEffect avoids GeometryReader which caused clipping
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.09))
-                    .frame(height: 5)
-                Capsule()
-                    .fill(state.isOverBudget
-                          ? AnyShapeStyle(islandRed)
-                          : AnyShapeStyle(pinkPurpleGrad))
-                    .frame(height: 5)
-                    .scaleEffect(x: max(state.usedFraction, 0.02), y: 1, anchor: .leading)
-            }
+            // Tick gauge (fixed-size ticks, no GeometryReader)
+            WTickGauge(progress: state.usedFraction, ticks: 30, height: 16,
+                       marker: state.isOverBudget ? islandRed : islandPink)
 
             // Footer row
             HStack(spacing: 0) {
@@ -219,49 +188,38 @@ private struct BudgetBannerView: View {
     let state: BudgetActivityAttributes.BudgetState
 
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(islandPink.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "creditcard.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(islandPink)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Daily Budget")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(textSecondary)
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(attributes.currencySymbol + bannerFmt(state.spent))
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .monospacedDigit()
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Spent today")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(textSecondary)
+                    WAmount(symbol: attributes.currencySymbol,
+                            value: W.grouped(state.spent, currencyCode: state.currencyCode),
+                            size: 34)
                         .foregroundStyle(state.isOverBudget ? islandRed : textPrimary)
                         .contentTransition(.numericText())
-                    Text("/ " + attributes.currencySymbol + bannerFmt(state.limit))
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(textSecondary)
                 }
+                Spacer()
+                WRing(progress: state.usedFraction, tint: state.isOverBudget ? islandRed : islandPink, size: 42)
             }
 
-            Spacer()
+            WTickGauge(progress: state.usedFraction, ticks: 40, height: 16,
+                       marker: state.isOverBudget ? islandRed : islandPink)
 
-            ZStack {
-                Circle().stroke(Color.white.opacity(0.10), lineWidth: 4)
-                Circle()
-                    .trim(from: 0, to: state.usedFraction)
-                    .stroke(state.isOverBudget ? islandRed : islandPink,
-                            style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                Text("\(Int(state.usedFraction * 100))%")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(textPrimary)
+            HStack {
+                Text(state.isOverBudget
+                     ? "\(attributes.currencySymbol)\(bannerFmt(state.spent - state.limit)) over"
+                     : "\(attributes.currencySymbol)\(bannerFmt(state.remaining)) left")
+                Spacer()
+                Text("of \(attributes.currencySymbol)\(bannerFmt(state.limit))")
             }
-            .frame(width: 40, height: 40)
+            .font(.system(size: 11))
+            .monospacedDigit()
+            .foregroundStyle(textTertiary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
     }
 
     private func bannerFmt(_ v: Double) -> String {
